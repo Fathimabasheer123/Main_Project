@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Portal</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>👤 Patient Portal</h1>
+    <p><a href="/">← Back to Home</a></p>
+    
+    <hr>
+    
+    <h2>View Your Prescription</h2>
+    <p>Enter the Prescription ID given by your doctor:</p>
+    
+    <form id="viewForm">
+        <label>Prescription ID:</label><br>
+        <input type="text" id="prescriptionId" placeholder="e.g., a1b2c3d4e5f6g7h8" size="40"><br><br>
+        <button type="submit">🔍 View My Prescription</button>
+    </form>
+    
+    <hr>
+    
+    <div id="loading" style="display:none;">
+        <p>⏳ Retrieving prescription from blockchain...</p>
+    </div>
+    
+    <div id="prescription" style="display:none;">
+        <h2>📋 Your Prescription</h2>
+        
+        <h3>Basic Information</h3>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td><strong>Prescription ID:</strong></td>
+                <td><code id="id"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Date Issued:</strong></td>
+                <td id="date"></td>
+            </tr>
+            <tr>
+                <td><strong>Status:</strong></td>
+                <td id="status"></td>
+            </tr>
+        </table>
+        
+        <h3>Medical Details</h3>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td><strong>Patient Address:</strong></td>
+                <td><code id="patient"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Doctor Address:</strong></td>
+                <td><code id="doctor"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Diagnosed Disease:</strong></td>
+                <td id="disease"></td>
+            </tr>
+            <tr>
+                <td><strong>Prescribed Medication:</strong></td>
+                <td id="drug"></td>
+            </tr>
+            <tr>
+                <td><strong>Possible Side Effects:</strong></td>
+                <td id="effects"></td>
+            </tr>
+        </table>
+        
+        <h3>Blockchain Verification</h3>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td><strong>IPFS Hash:</strong></td>
+                <td><code id="ipfs"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Active:</strong></td>
+                <td id="active"></td>
+            </tr>
+            <tr>
+                <td><strong>Filled:</strong></td>
+                <td id="filled"></td>
+            </tr>
+        </table>
+        
+        <br>
+        <h3>Actions</h3>
+        <button onclick="downloadPrescription()">📥 Download Prescription (PDF)</button>
+        <button onclick="printPrescription()">🖨️ Print Prescription</button>
+        <button onclick="shareQR()">📱 Show QR Code for Pharmacy</button>
+        <button onclick="viewHistory()">📚 View My History</button>
+        
+        <br><br>
+        <button onclick="searchAnother()">🔍 Search Another Prescription</button>
+    </div>
+    
+    <div id="error" style="display:none; color:red;">
+        <h3>❌ Error</h3>
+        <p id="errorMessage"></p>
+        <button onclick="searchAnother()">Try Again</button>
+    </div>
+    
+    <div id="qrSection" style="display:none;">
+        <h2>📱 QR Code for Pharmacy</h2>
+        <p>Show this QR code to the pharmacy to fill your prescription:</p>
+        <div id="qrcode" style="border: 2px solid black; padding: 20px; display: inline-block;">
+            <p style="font-size: 20px; font-family: monospace;" id="qrText"></p>
+        </div>
+        <br><br>
+        <button onclick="document.getElementById('qrSection').style.display='none'">Close QR Code</button>
+    </div>
+    
+    <script>
+    let currentRx = null;
+    
+    document.getElementById('viewForm').onsubmit = async function(e) {
+        e.preventDefault();
+        
+        const prescriptionId = document.getElementById('prescriptionId').value.trim();
+        
+        if (!prescriptionId) {
+            alert('Please enter a Prescription ID');
+            return;
+        }
+        
+        // Show loading
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('prescription').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        
+        try {
+            const response = await fetch(`/api/blockchain/get-prescription/${prescriptionId}/`);
+            const data = await response.json();
+            
+            document.getElementById('loading').style.display = 'none';
+            
+            if (data.success) {
+                currentRx = data.prescription;
+                
+                // Fill in the data
+                document.getElementById('id').textContent = currentRx.id;
+                document.getElementById('patient').textContent = currentRx.patient;
+                document.getElementById('doctor').textContent = currentRx.doctor;
+                document.getElementById('disease').textContent = currentRx.disease;
+                document.getElementById('drug').textContent = currentRx.drug;
+                document.getElementById('effects').textContent = currentRx.adverse_effects;
+                document.getElementById('ipfs').textContent = currentRx.ipfs_hash;
+                
+                // Format date
+                const date = new Date(currentRx.timestamp * 1000);
+                document.getElementById('date').textContent = date.toLocaleString();
+                
+                // Status
+                const statusText = currentRx.is_filled ? '✅ Filled (Medicine Dispensed)' : '⏳ Not Filled Yet';
+                const statusColor = currentRx.is_filled ? 'green' : 'orange';
+                document.getElementById('status').innerHTML = `<span style="color:${statusColor}; font-weight:bold;">${statusText}</span>`;
+                
+                document.getElementById('active').textContent = currentRx.is_active ? 'Yes ✅' : 'No ❌';
+                document.getElementById('filled').textContent = currentRx.is_filled ? 'Yes ✅' : 'No ❌';
+                
+                // Show prescription
+                document.getElementById('prescription').style.display = 'block';
+                document.getElementById('prescription').scrollIntoView({behavior: 'smooth'});
+                
+            } else {
+                document.getElementById('errorMessage').textContent = data.error || 'Prescription not found';
+                document.getElementById('error').style.display = 'block';
+            }
+        } catch (error) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').textContent = 'Network error: ' + error.message;
+            document.getElementById('error').style.display = 'block';
+        }
+    };
+    
+    function searchAnother() {
+        document.getElementById('prescriptionId').value = '';
+        document.getElementById('prescription').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('qrSection').style.display = 'none';
+        document.getElementById('prescriptionId').focus();
+    }
+    
+    function downloadPrescription() {
+        alert('Download PDF feature - will implement with PDF generation library');
+    }
+    
+    function printPrescription() {
+        window.print();
+    }
+    
+    function shareQR() {
+        if (!currentRx) return;
+        
+        document.getElementById('qrText').textContent = currentRx.id;
+        document.getElementById('qrSection').style.display = 'block';
+        document.getElementById('qrSection').scrollIntoView({behavior: 'smooth'});
+    }
+    
+    function viewHistory() {
+        alert('View History feature - will show all prescriptions for this patient address');
+    }
+    </script>
+</body>
+</html>

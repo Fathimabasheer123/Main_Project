@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blockchain Test Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .card {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #4CAF50;
+            border-radius: 4px;
+        }
+        .error {
+            border-left-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔗 Blockchain Test Interface</h1>
+    
+    <div class="card">
+        <h2>Create Prescription</h2>
+        <form id="createForm">
+            <input type="text" id="patientAddress" placeholder="Patient Address (0x...)" required>
+            <input type="text" id="disease" placeholder="Disease" required>
+            <input type="text" id="drug" placeholder="Drug" required>
+            <textarea id="adverseEffects" placeholder="Adverse Effects" rows="3" required></textarea>
+            <button type="submit">Create on Blockchain</button>
+        </form>
+        <div id="createResult"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Get Prescription</h2>
+        <form id="getForm">
+            <input type="text" id="prescriptionId" placeholder="Prescription ID" required>
+            <button type="submit">Retrieve from Blockchain</button>
+        </form>
+        <div id="getResult"></div>
+    </div>
+    
+    <script>
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                patient_address: document.getElementById('patientAddress').value,
+                disease: document.getElementById('disease').value,
+                drug: document.getElementById('drug').value,
+                adverse_effects: document.getElementById('adverseEffects').value,
+                ai_predictions: {}
+            };
+            
+            try {
+                const response = await fetch('/api/blockchain/store-prescription/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('createResult').innerHTML = `
+                        <div class="result">
+                            <h3>✅ Success!</h3>
+                            <p><strong>Prescription ID:</strong> ${result.prescription_id}</p>
+                            <p><strong>Transaction:</strong> ${result.transaction_hash}</p>
+                            <p><strong>Block:</strong> #${result.block_number}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                document.getElementById('createResult').innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+        
+        document.getElementById('getForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const prescriptionId = document.getElementById('prescriptionId').value;
+            
+            try {
+                const response = await fetch(`/api/blockchain/get-prescription/${prescriptionId}/`);
+                const result = await response.json();
+                
+                document.getElementById('getResult').innerHTML = `
+                    <div class="result">
+                        <h3>📋 Prescription Details</h3>
+                        <p><strong>Patient:</strong> ${result.patient}</p>
+                        <p><strong>Doctor:</strong> ${result.doctor}</p>
+                        <p><strong>Disease:</strong> ${result.disease}</p>
+                        <p><strong>Drug:</strong> ${result.drug}</p>
+                        <p><strong>Adverse Effects:</strong> ${result.adverse_effects}</p>
+                        <p><strong>Active:</strong> ${result.is_active ? 'Yes' : 'No'}</p>
+                        <p><strong>Filled:</strong> ${result.is_filled ? 'Yes' : 'No'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('getResult').innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

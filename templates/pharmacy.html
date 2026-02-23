@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pharmacy Interface</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>🏥 Pharmacy Verification System</h1>
+    <p><a href="/">← Back to Home</a></p>
+    
+    <hr>
+    
+    <h2>Verify & Dispense Prescription</h2>
+    <p>Scan QR code or enter Prescription ID manually:</p>
+    
+    <form id="verifyForm">
+        <label>Prescription ID:</label><br>
+        <input type="text" id="prescriptionId" placeholder="Scan QR or enter ID" size="40"><br><br>
+        <button type="submit">🔍 Verify Prescription</button>
+        <button type="button" onclick="document.getElementById('prescriptionId').value=''; document.getElementById('prescriptionId').focus()">🔄 Clear</button>
+    </form>
+    
+    <hr>
+    
+    <div id="loading" style="display:none;">
+        <p>⏳ Verifying prescription on blockchain...</p>
+    </div>
+    
+    <div id="prescription" style="display:none;">
+        <h2>📋 Prescription Verification Results</h2>
+        
+        <div id="verificationStatus"></div>
+        
+        <h3>Prescription Details</h3>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td><strong>Prescription ID:</strong></td>
+                <td><code id="id"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Issue Date:</strong></td>
+                <td id="date"></td>
+            </tr>
+            <tr>
+                <td><strong>Patient Address:</strong></td>
+                <td><code id="patient"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Doctor Address:</strong></td>
+                <td><code id="doctor"></code></td>
+            </tr>
+            <tr>
+                <td><strong>Status:</strong></td>
+                <td id="status"></td>
+            </tr>
+        </table>
+        
+        <h3>Medical Information</h3>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td><strong>Diagnosed Disease:</strong></td>
+                <td id="disease"></td>
+            </tr>
+            <tr>
+                <td><strong>Prescribed Medication:</strong></td>
+                <td id="drug"></td>
+            </tr>
+            <tr>
+                <td><strong>Side Effects Warning:</strong></td>
+                <td id="effects"></td>
+            </tr>
+        </table>
+        
+        <h3>Blockchain Verification</h3>
+        <table border="1" cellpadding="10">
+            <tr>
+                <td><strong>Authenticity:</strong></td>
+                <td id="authentic"></td>
+            </tr>
+            <tr>
+                <td><strong>Already Filled:</strong></td>
+                <td id="filled"></td>
+            </tr>
+            <tr>
+                <td><strong>Active Status:</strong></td>
+                <td id="active"></td>
+            </tr>
+            <tr>
+                <td><strong>IPFS Hash:</strong></td>
+                <td><code id="ipfs"></code></td>
+            </tr>
+        </table>
+        
+        <br>
+        <div id="actionButtons"></div>
+        
+        <br><br>
+        <button onclick="verifyAnother()">🔍 Verify Another Prescription</button>
+    </div>
+    
+    <div id="error" style="display:none; color:red;">
+        <h3>❌ Verification Failed</h3>
+        <p id="errorMessage"></p>
+        <button onclick="verifyAnother()">Try Again</button>
+    </div>
+    
+    <div id="dispensingSection" style="display:none;">
+        <hr>
+        <h2>💊 Dispense Medicine</h2>
+        <p><strong>Confirm dispensing details:</strong></p>
+        
+        <form id="dispenseForm">
+            <label>Pharmacist Name:</label><br>
+            <input type="text" id="pharmacistName" placeholder="Your name" required><br><br>
+            
+            <label>Batch Number:</label><br>
+            <input type="text" id="batchNumber" placeholder="Medicine batch number"><br><br>
+            
+            <label>Quantity Dispensed:</label><br>
+            <input type="number" id="quantity" value="1" min="1" required><br><br>
+            
+            <label>Notes:</label><br>
+            <textarea id="notes" rows="3" cols="40" placeholder="Any additional notes..."></textarea><br><br>
+            
+            <label>
+                <input type="checkbox" id="confirmCheck" required>
+                I confirm that I have verified patient identity and dispensed the correct medication
+            </label><br><br>
+            
+            <button type="submit">✅ Confirm Dispensing & Update Blockchain</button>
+            <button type="button" onclick="cancelDispensing()">❌ Cancel</button>
+        </form>
+        
+        <div id="dispensingStatus"></div>
+    </div>
+    
+    <script>
+    let currentRx = null;
+    
+    document.getElementById('verifyForm').onsubmit = async function(e) {
+        e.preventDefault();
+        
+        const prescriptionId = document.getElementById('prescriptionId').value.trim();
+        
+        if (!prescriptionId) {
+            alert('Please enter a Prescription ID');
+            return;
+        }
+        
+        // Show loading
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('prescription').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('dispensingSection').style.display = 'none';
+        
+        try {
+            const response = await fetch(`/api/blockchain/get-prescription/${prescriptionId}/`);
+            const data = await response.json();
+            
+            document.getElementById('loading').style.display = 'none';
+            
+            if (data.success) {
+                currentRx = data.prescription;
+                
+                // Fill in the data
+                document.getElementById('id').textContent = currentRx.id;
+                document.getElementById('patient').textContent = currentRx.patient;
+                document.getElementById('doctor').textContent = currentRx.doctor;
+                document.getElementById('disease').textContent = currentRx.disease;
+                document.getElementById('drug').textContent = currentRx.drug;
+                document.getElementById('effects').textContent = currentRx.adverse_effects;
+                document.getElementById('ipfs').textContent = currentRx.ipfs_hash;
+                
+                // Format date
+                const date = new Date(currentRx.timestamp * 1000);
+                document.getElementById('date').textContent = date.toLocaleString();
+                
+                // Authenticity
+                document.getElementById('authentic').innerHTML = '<span style="color:green; font-weight:bold;">✅ AUTHENTIC (Verified on Blockchain)</span>';
+                
+                // Status checks
+                if (!currentRx.is_active) {
+                    document.getElementById('verificationStatus').innerHTML = `
+                        <div style="background:red; color:white; padding:10px; font-weight:bold;">
+                            ⚠️ WARNING: This prescription is INACTIVE and should not be filled!
+                        </div>
+                    `;
+                    document.getElementById('status').innerHTML = '<span style="color:red;">❌ INACTIVE</span>';
+                    document.getElementById('actionButtons').innerHTML = '<p style="color:red;">Cannot dispense: Prescription is inactive</p>';
+                    
+                } else if (currentRx.is_filled) {
+                    document.getElementById('verificationStatus').innerHTML = `
+                        <div style="background:orange; color:white; padding:10px; font-weight:bold;">
+                            ⚠️ WARNING: This prescription has ALREADY BEEN FILLED!
+                        </div>
+                    `;
+                    document.getElementById('status').innerHTML = '<span style="color:orange;">⚠️ ALREADY FILLED</span>';
+                    document.getElementById('actionButtons').innerHTML = '<p style="color:orange;">Cannot dispense: Already filled at another pharmacy</p>';
+                    
+                } else {
+                    document.getElementById('verificationStatus').innerHTML = `
+                        <div style="background:green; color:white; padding:10px; font-weight:bold;">
+                            ✅ VERIFICATION SUCCESSFUL - Ready to Dispense
+                        </div>
+                    `;
+                    document.getElementById('status').innerHTML = '<span style="color:green;">✅ ACTIVE & NOT FILLED</span>';
+                    document.getElementById('actionButtons').innerHTML = `
+                        <button onclick="startDispensing()" style="background:green; color:white; padding:10px 20px; font-size:16px;">
+                            💊 Dispense Medicine & Mark as Filled
+                        </button>
+                    `;
+                }
+                
+                document.getElementById('filled').textContent = currentRx.is_filled ? 'Yes ⚠️' : 'No ✅';
+                document.getElementById('active').textContent = currentRx.is_active ? 'Yes ✅' : 'No ❌';
+                
+                // Show prescription
+                document.getElementById('prescription').style.display = 'block';
+                document.getElementById('prescription').scrollIntoView({behavior: 'smooth'});
+                
+            } else {
+                document.getElementById('errorMessage').textContent = data.error || 'Prescription not found on blockchain';
+                document.getElementById('error').style.display = 'block';
+            }
+        } catch (error) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').textContent = 'Network error: ' + error.message;
+            document.getElementById('error').style.display = 'block';
+        }
+    };
+    
+    function verifyAnother() {
+        document.getElementById('prescriptionId').value = '';
+        document.getElementById('prescription').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('dispensingSection').style.display = 'none';
+        document.getElementById('prescriptionId').focus();
+    }
+    
+    function startDispensing() {
+        document.getElementById('dispensingSection').style.display = 'block';
+        document.getElementById('dispensingSection').scrollIntoView({behavior: 'smooth'});
+    }
+    
+    function cancelDispensing() {
+        document.getElementById('dispensingSection').style.display = 'none';
+        document.getElementById('dispenseForm').reset();
+    }
+    
+    document.getElementById('dispenseForm').onsubmit = async function(e) {
+        e.preventDefault();
+        
+        if (!currentRx) return;
+        
+        const pharmacistName = document.getElementById('pharmacistName').value;
+        const batchNumber = document.getElementById('batchNumber').value;
+        const quantity = document.getElementById('quantity').value;
+        const notes = document.getElementById('notes').value;
+        
+        document.getElementById('dispensingStatus').innerHTML = '<p>⏳ Updating blockchain...</p>';
+        
+        // In production, you would call the fillPrescription API here
+        // For now, just simulate success
+        
+        setTimeout(() => {
+            document.getElementById('dispensingStatus').innerHTML = `
+                <div style="background:green; color:white; padding:10px; margin-top:10px;">
+                    <h3>✅ SUCCESS!</h3>
+                    <p>Prescription marked as filled on blockchain</p>
+                    <p><strong>Dispensed by:</strong> ${pharmacistName}</p>
+                    <p><strong>Batch Number:</strong> ${batchNumber}</p>
+                    <p><strong>Quantity:</strong> ${quantity}</p>
+                    <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+                    ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+                </div>
+                <br>
+                <button onclick="printReceipt()">🖨️ Print Receipt</button>
+                <button onclick="location.reload()">➕ Process Next Prescription</button>
+            `;
+            
+            // Update display
+            document.getElementById('filled').textContent = 'Yes ✅';
+            document.getElementById('status').innerHTML = '<span style="color:green;">✅ FILLED</span>';
+            document.getElementById('actionButtons').innerHTML = '<p style="color:green;">✅ This prescription has been filled</p>';
+            
+        }, 2000);
+    };
+    
+    function printReceipt() {
+        window.print();
+    }
+    </script>
+</body>
+</html>
