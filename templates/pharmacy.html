@@ -1,294 +1,376 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Pharmacy Interface</title>
-    <meta charset="UTF-8">
-</head>
-<body>
-    <h1>🏥 Pharmacy Verification System</h1>
-    <p><a href="/">← Back to Home</a></p>
-    
-    <hr>
-    
-    <h2>Verify & Dispense Prescription</h2>
-    <p>Scan QR code or enter Prescription ID manually:</p>
-    
-    <form id="verifyForm">
-        <label>Prescription ID:</label><br>
-        <input type="text" id="prescriptionId" placeholder="Scan QR or enter ID" size="40"><br><br>
-        <button type="submit">🔍 Verify Prescription</button>
-        <button type="button" onclick="document.getElementById('prescriptionId').value=''; document.getElementById('prescriptionId').focus()">🔄 Clear</button>
-    </form>
-    
-    <hr>
-    
-    <div id="loading" style="display:none;">
-        <p>⏳ Verifying prescription on blockchain...</p>
+{% extends 'base_dashboard.html' %}
+{% block title %}Pharmacy Dashboard - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container { display: flex; min-height: 100vh; }
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #f59e0b, #d97706);
+        color: white; position: fixed; height: 100vh;
+        overflow-y: auto; z-index: 1000;
+        display: flex; flex-direction: column;
+    }
+    .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.2); }
+    .sidebar-title { font-size: 1.3rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+    .sidebar-subtitle { font-size: 0.85rem; opacity: 0.85; margin-top: 0.3rem; }
+    .sidebar-menu { padding: 0.5rem 0; flex: 1; }
+    .menu-item {
+        padding: 0.85rem 1.5rem; display: flex; align-items: center;
+        gap: 0.75rem; color: rgba(255,255,255,0.9); text-decoration: none;
+        border-left: 3px solid transparent; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+    }
+    .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.15); color: white; border-left-color: white; }
+    .menu-item i { width: 20px; text-align: center; }
+    .sidebar-footer { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.2); }
+    .main-content { margin-left: 260px; flex: 1; padding: 1.5rem; }
+    .top-bar {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .user-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 700;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+        background: white; padding: 1.2rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex;
+        justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;
+    }
+    .stat-label { font-size: 0.8rem; color: #64748b; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .icon-orange { background: #fed7aa; color: #f59e0b; }
+    .icon-green { background: #d1fae5; color: #10b981; }
+    .icon-blue { background: #dbeafe; color: #3b82f6; }
+    .content-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; border: 1px solid #e2e8f0; }
+    .card-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; }
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white; border: none; padding: 0.6rem 1.4rem;
+        border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+    }
+    .btn-primary-custom:hover { opacity: 0.9; color: white; }
+    .result-box { padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+    .result-valid { background: #d1fae5; border-left: 4px solid #10b981; }
+    .result-invalid { background: #fecaca; border-left: 4px solid #ef4444; }
+    .result-filled { background: #fef3c7; border-left: 4px solid #f59e0b; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+    .info-item { background: #f8fafc; padding: 0.75rem; border-radius: 8px; }
+    .info-label { font-size: 0.75rem; color: #64748b; }
+    .info-value { font-weight: 600; color: #1e293b; font-size: 0.9rem; word-break: break-all; }
+    .empty-msg { text-align: center; color: #94a3b8; padding: 2rem; }
+    .history-row { padding: 0.75rem; border-left: 3px solid #f59e0b; background: #fffbeb; border-radius: 6px; margin-bottom: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title"><i class="bi bi-hospital-fill"></i> MedChain</div>
+            <div class="sidebar-subtitle">{{ user.first_name }} {{ user.last_name }}</div>
+        </div>
+        <div class="sidebar-menu">
+            <a href="{% url 'pharmacy_dashboard' %}" class="menu-item active">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="{% url 'dispensing_history_pharmacy' %}" class="menu-item">
+                <i class="bi bi-clock-history"></i> Dispensing History
+            </a>
+            <a href="{% url 'daily_report_pharmacy' %}" class="menu-item">
+                <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
+            </a>
+            <a href="{% url 'pharmacy_analytics' %}" class="menu-item">
+                <i class="bi bi-graph-up"></i> Analytics
+            </a>
+            <a href="{% url 'pharmacy_settings' %}" class="menu-item">
+                <i class="bi bi-gear-fill"></i> Settings
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="menu-item">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
     </div>
-    
-    <div id="prescription" style="display:none;">
-        <h2>📋 Prescription Verification Results</h2>
-        
-        <div id="verificationStatus"></div>
-        
-        <h3>Prescription Details</h3>
-        <table border="1" cellpadding="10">
-            <tr>
-                <td><strong>Prescription ID:</strong></td>
-                <td><code id="id"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Issue Date:</strong></td>
-                <td id="date"></td>
-            </tr>
-            <tr>
-                <td><strong>Patient Address:</strong></td>
-                <td><code id="patient"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Doctor Address:</strong></td>
-                <td><code id="doctor"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Status:</strong></td>
-                <td id="status"></td>
-            </tr>
-        </table>
-        
-        <h3>Medical Information</h3>
-        <table border="1" cellpadding="10">
-            <tr>
-                <td><strong>Diagnosed Disease:</strong></td>
-                <td id="disease"></td>
-            </tr>
-            <tr>
-                <td><strong>Prescribed Medication:</strong></td>
-                <td id="drug"></td>
-            </tr>
-            <tr>
-                <td><strong>Side Effects Warning:</strong></td>
-                <td id="effects"></td>
-            </tr>
-        </table>
-        
-        <h3>Blockchain Verification</h3>
-        <table border="1" cellpadding="10">
-            <tr>
-                <td><strong>Authenticity:</strong></td>
-                <td id="authentic"></td>
-            </tr>
-            <tr>
-                <td><strong>Already Filled:</strong></td>
-                <td id="filled"></td>
-            </tr>
-            <tr>
-                <td><strong>Active Status:</strong></td>
-                <td id="active"></td>
-            </tr>
-            <tr>
-                <td><strong>IPFS Hash:</strong></td>
-                <td><code id="ipfs"></code></td>
-            </tr>
-        </table>
-        
-        <br>
-        <div id="actionButtons"></div>
-        
-        <br><br>
-        <button onclick="verifyAnother()">🔍 Verify Another Prescription</button>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <div class="top-bar">
+            <div>
+                <div class="page-title">Pharmacy Dashboard</div>
+                <div style="font-size:0.85rem;color:#64748b;">{% now "l, d M Y" %}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="user-avatar">{{ user.first_name.0 }}</div>
+            </div>
+        </div>
+
+        <!-- Stats — real data from views.py -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Today Dispensed</div>
+                    <div class="stat-value">{{ today_count|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-orange"><i class="bi bi-capsule-pill"></i></div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">This Week</div>
+                    <div class="stat-value">{{ week_count|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-green"><i class="bi bi-calendar-week"></i></div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Dispensed</div>
+                    <div class="stat-value">{{ total_filled|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-blue"><i class="bi bi-check-circle-fill"></i></div>
+            </div>
+        </div>
+
+        <!-- Verify & Dispense -->
+        <div class="content-card">
+            <div class="card-title">
+                <i class="bi bi-qr-code-scan"></i> Verify & Dispense Prescription
+            </div>
+
+            <div class="row g-2">
+                <div class="col-md-9">
+                    <input type="text" class="form-control form-control-lg"
+                           id="prescriptionId" placeholder="Enter Prescription ID (e.g., RX-ABC123...)">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary-custom w-100 btn-lg" onclick="verifyPrescription()">
+                        <i class="bi bi-search"></i> Verify
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingDiv" class="text-center py-3" style="display:none;">
+                <div class="spinner-border text-warning"></div>
+                <div class="mt-2 text-muted">Checking blockchain...</div>
+            </div>
+
+            <!-- Result -->
+            <div id="resultDiv" style="display:none;"></div>
+
+            <!-- Dispense Button — shown only when valid -->
+            <div id="dispenseBtn" style="display:none; margin-top:1rem;">
+                <button class="btn btn-success btn-lg" onclick="dispense()">
+                    <i class="bi bi-capsule-pill"></i> Confirm & Dispense
+                </button>
+                <span class="text-muted ms-3" style="font-size:0.85rem;">
+                    This will update the blockchain permanently
+                </span>
+            </div>
+
+            <!-- Dispense Result -->
+            <div id="dispenseResult" style="display:none; margin-top:1rem;"></div>
+        </div>
+
+        <!-- Recent History -->
+        <div class="content-card">
+            <div class="card-title"><i class="bi bi-clock-history"></i> Recent Dispensed</div>
+            {% if prescriptions %}
+                {% for rx in prescriptions %}
+                <div class="history-row">
+                    <div style="font-family:monospace;font-size:0.85rem;color:#d97706;">{{ rx.prescription_id }}</div>
+                    <div style="font-size:0.85rem;color:#64748b;">
+                        {{ rx.disease }} &bull; {{ rx.filled_at|date:"d M Y, H:i" }}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-msg">
+                    <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
+                    No dispensing history yet.
+                </div>
+            {% endif %}
+        </div>
+
     </div>
-    
-    <div id="error" style="display:none; color:red;">
-        <h3>❌ Verification Failed</h3>
-        <p id="errorMessage"></p>
-        <button onclick="verifyAnother()">Try Again</button>
-    </div>
-    
-    <div id="dispensingSection" style="display:none;">
-        <hr>
-        <h2>💊 Dispense Medicine</h2>
-        <p><strong>Confirm dispensing details:</strong></p>
-        
-        <form id="dispenseForm">
-            <label>Pharmacist Name:</label><br>
-            <input type="text" id="pharmacistName" placeholder="Your name" required><br><br>
-            
-            <label>Batch Number:</label><br>
-            <input type="text" id="batchNumber" placeholder="Medicine batch number"><br><br>
-            
-            <label>Quantity Dispensed:</label><br>
-            <input type="number" id="quantity" value="1" min="1" required><br><br>
-            
-            <label>Notes:</label><br>
-            <textarea id="notes" rows="3" cols="40" placeholder="Any additional notes..."></textarea><br><br>
-            
-            <label>
-                <input type="checkbox" id="confirmCheck" required>
-                I confirm that I have verified patient identity and dispensed the correct medication
-            </label><br><br>
-            
-            <button type="submit">✅ Confirm Dispensing & Update Blockchain</button>
-            <button type="button" onclick="cancelDispensing()">❌ Cancel</button>
-        </form>
-        
-        <div id="dispensingStatus"></div>
-    </div>
-    
-    <script>
-    let currentRx = null;
-    
-    document.getElementById('verifyForm').onsubmit = async function(e) {
-        e.preventDefault();
-        
-        const prescriptionId = document.getElementById('prescriptionId').value.trim();
-        
-        if (!prescriptionId) {
-            alert('Please enter a Prescription ID');
+</div>
+
+<script>
+let verifiedId = null;
+
+function getCsrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
+async function verifyPrescription() {
+    const rxId = document.getElementById('prescriptionId').value.trim();
+    if (!rxId) { alert('Enter a Prescription ID'); return; }
+
+    document.getElementById('loadingDiv').style.display   = 'block';
+    document.getElementById('resultDiv').style.display    = 'none';
+    document.getElementById('dispenseBtn').style.display  = 'none';
+    document.getElementById('dispenseResult').style.display = 'none';
+    verifiedId = null;
+
+    try {
+        const res  = await fetch(`/api/blockchain/get-prescription/${rxId}/`);
+        const data = await res.json();
+        document.getElementById('loadingDiv').style.display = 'none';
+
+        if (!data.success) {
+            showResult('invalid', '❌ Not found: ' + (data.error || 'Unknown error'));
             return;
         }
-        
-        // Show loading
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('prescription').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('dispensingSection').style.display = 'none';
-        
-        try {
-            const response = await fetch(`/api/blockchain/get-prescription/${prescriptionId}/`);
-            const data = await response.json();
-            
-            document.getElementById('loading').style.display = 'none';
-            
-            if (data.success) {
-                currentRx = data.prescription;
-                
-                // Fill in the data
-                document.getElementById('id').textContent = currentRx.id;
-                document.getElementById('patient').textContent = currentRx.patient;
-                document.getElementById('doctor').textContent = currentRx.doctor;
-                document.getElementById('disease').textContent = currentRx.disease;
-                document.getElementById('drug').textContent = currentRx.drug;
-                document.getElementById('effects').textContent = currentRx.adverse_effects;
-                document.getElementById('ipfs').textContent = currentRx.ipfs_hash;
-                
-                // Format date
-                const date = new Date(currentRx.timestamp * 1000);
-                document.getElementById('date').textContent = date.toLocaleString();
-                
-                // Authenticity
-                document.getElementById('authentic').innerHTML = '<span style="color:green; font-weight:bold;">✅ AUTHENTIC (Verified on Blockchain)</span>';
-                
-                // Status checks
-                if (!currentRx.is_active) {
-                    document.getElementById('verificationStatus').innerHTML = `
-                        <div style="background:red; color:white; padding:10px; font-weight:bold;">
-                            ⚠️ WARNING: This prescription is INACTIVE and should not be filled!
-                        </div>
-                    `;
-                    document.getElementById('status').innerHTML = '<span style="color:red;">❌ INACTIVE</span>';
-                    document.getElementById('actionButtons').innerHTML = '<p style="color:red;">Cannot dispense: Prescription is inactive</p>';
-                    
-                } else if (currentRx.is_filled) {
-                    document.getElementById('verificationStatus').innerHTML = `
-                        <div style="background:orange; color:white; padding:10px; font-weight:bold;">
-                            ⚠️ WARNING: This prescription has ALREADY BEEN FILLED!
-                        </div>
-                    `;
-                    document.getElementById('status').innerHTML = '<span style="color:orange;">⚠️ ALREADY FILLED</span>';
-                    document.getElementById('actionButtons').innerHTML = '<p style="color:orange;">Cannot dispense: Already filled at another pharmacy</p>';
-                    
-                } else {
-                    document.getElementById('verificationStatus').innerHTML = `
-                        <div style="background:green; color:white; padding:10px; font-weight:bold;">
-                            ✅ VERIFICATION SUCCESSFUL - Ready to Dispense
-                        </div>
-                    `;
-                    document.getElementById('status').innerHTML = '<span style="color:green;">✅ ACTIVE & NOT FILLED</span>';
-                    document.getElementById('actionButtons').innerHTML = `
-                        <button onclick="startDispensing()" style="background:green; color:white; padding:10px 20px; font-size:16px;">
-                            💊 Dispense Medicine & Mark as Filled
-                        </button>
-                    `;
-                }
-                
-                document.getElementById('filled').textContent = currentRx.is_filled ? 'Yes ⚠️' : 'No ✅';
-                document.getElementById('active').textContent = currentRx.is_active ? 'Yes ✅' : 'No ❌';
-                
-                // Show prescription
-                document.getElementById('prescription').style.display = 'block';
-                document.getElementById('prescription').scrollIntoView({behavior: 'smooth'});
-                
-            } else {
-                document.getElementById('errorMessage').textContent = data.error || 'Prescription not found on blockchain';
-                document.getElementById('error').style.display = 'block';
-            }
-        } catch (error) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('errorMessage').textContent = 'Network error: ' + error.message;
-            document.getElementById('error').style.display = 'block';
+
+        // FIX — use db_data for medical info
+        const db    = data.db_data;
+        const onChain = data.blockchain_available;
+        const bc    = data.prescription;
+
+        // Source badge
+        const sourceBadge = onChain
+            ? '<span style="background:#d1fae5;color:#065f46;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:600;">🔗 Blockchain Verified</span>'
+            : '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:600;">📋 Database</span>';
+
+        if (db.is_cancelled) {
+            showResult('invalid', '❌ Prescription is CANCELLED');
+            return;
         }
-    };
-    
-    function verifyAnother() {
-        document.getElementById('prescriptionId').value = '';
-        document.getElementById('prescription').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('dispensingSection').style.display = 'none';
-        document.getElementById('prescriptionId').focus();
-    }
-    
-    function startDispensing() {
-        document.getElementById('dispensingSection').style.display = 'block';
-        document.getElementById('dispensingSection').scrollIntoView({behavior: 'smooth'});
-    }
-    
-    function cancelDispensing() {
-        document.getElementById('dispensingSection').style.display = 'none';
-        document.getElementById('dispenseForm').reset();
-    }
-    
-    document.getElementById('dispenseForm').onsubmit = async function(e) {
-        e.preventDefault();
-        
-        if (!currentRx) return;
-        
-        const pharmacistName = document.getElementById('pharmacistName').value;
-        const batchNumber = document.getElementById('batchNumber').value;
-        const quantity = document.getElementById('quantity').value;
-        const notes = document.getElementById('notes').value;
-        
-        document.getElementById('dispensingStatus').innerHTML = '<p>⏳ Updating blockchain...</p>';
-        
-        // In production, you would call the fillPrescription API here
-        // For now, just simulate success
-        
-        setTimeout(() => {
-            document.getElementById('dispensingStatus').innerHTML = `
-                <div style="background:green; color:white; padding:10px; margin-top:10px;">
-                    <h3>✅ SUCCESS!</h3>
-                    <p>Prescription marked as filled on blockchain</p>
-                    <p><strong>Dispensed by:</strong> ${pharmacistName}</p>
-                    <p><strong>Batch Number:</strong> ${batchNumber}</p>
-                    <p><strong>Quantity:</strong> ${quantity}</p>
-                    <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
-                    ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
+
+        if (db.is_filled) {
+            showResult('filled',
+                `⚠️ Already dispensed — cannot fill again<br>
+                 <small>Dispensed on: ${db.filled_at || 'N/A'}</small>`
+            );
+            return;
+        }
+
+        // Valid — show details
+        showResult('valid', `
+            <div style="display:flex;justify-content:space-between;
+                        align-items:center;margin-bottom:0.75rem;">
+                <strong>✅ Valid Prescription</strong>
+                ${sourceBadge}
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Prescription ID</div>
+                    <div class="info-value" style="font-family:monospace;
+                         font-size:0.8rem;">${db.prescription_id}</div>
                 </div>
-                <br>
-                <button onclick="printReceipt()">🖨️ Print Receipt</button>
-                <button onclick="location.reload()">➕ Process Next Prescription</button>
-            `;
-            
-            // Update display
-            document.getElementById('filled').textContent = 'Yes ✅';
-            document.getElementById('status').innerHTML = '<span style="color:green;">✅ FILLED</span>';
-            document.getElementById('actionButtons').innerHTML = '<p style="color:green;">✅ This prescription has been filled</p>';
-            
-        }, 2000);
-    };
-    
-    function printReceipt() {
-        window.print();
+                <div class="info-item">
+                    <div class="info-label">Patient</div>
+                    <div class="info-value">${db.patient || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Doctor</div>
+                    <div class="info-value">Dr. ${db.doctor || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Disease</div>
+                    <div class="info-value">${db.disease}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Medication</div>
+                    <div class="info-value">${db.drug}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Dosage</div>
+                    <div class="info-value">${db.dosage || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Frequency</div>
+                    <div class="info-value">${db.frequency || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Duration</div>
+                    <div class="info-value">${db.duration || 'N/A'}</div>
+                </div>
+                ${db.data_hash ? `
+                <div class="info-item" style="grid-column:1/-1;">
+                    <div class="info-label">Blockchain Hash</div>
+                    <div class="info-value" style="font-family:monospace;
+                         font-size:0.75rem;color:#6366f1;">
+                        ${db.data_hash.substring(0,32)}...
+                    </div>
+                </div>` : ''}
+            </div>
+        `);
+
+        verifiedId = rxId;
+        document.getElementById('dispenseBtn').style.display = 'block';
+
+    } catch (err) {
+        document.getElementById('loadingDiv').style.display = 'none';
+        showResult('invalid', '❌ Network error: ' + err.message);
     }
-    </script>
-</body>
-</html>
+}
+
+function showResult(type, html) {
+    const div     = document.getElementById('resultDiv');
+    const classes = {
+        valid:   'result-valid',
+        invalid: 'result-invalid',
+        filled:  'result-filled'
+    };
+    div.className    = 'result-box ' + classes[type];
+    div.innerHTML    = html;
+    div.style.display = 'block';
+}
+
+async function dispense() {
+    if (!verifiedId) return;
+
+    const btn = document.querySelector('#dispenseBtn button');
+    btn.disabled  = true;
+    btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
+
+    try {
+        const res = await fetch('/api/blockchain/fill-prescription/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken':  getCsrfToken()
+            },
+            body: JSON.stringify({ prescription_id: verifiedId })
+        });
+        const result = await res.json();
+
+        const dispenseDiv = document.getElementById('dispenseResult');
+        dispenseDiv.style.display = 'block';
+
+        if (result.success) {
+            dispenseDiv.className = 'result-box result-valid';
+            const bcMsg = result.blockchain_confirmed
+            ? `<br><small style="font-family:monospace;">TX: ${result.transaction_hash}<br>Block: ${result.block_number}</small>`
+            : `<br><small style="color:#92400e;">⚠️ Saved to database (blockchain offline)</small>`;
+            dispenseDiv.innerHTML = `✅ Dispensed successfully! ${bcMsg}`;
+            document.getElementById('dispenseBtn').style.display = 'none';
+            showResult('filled', '✅ Prescription has been dispensed.');
+            setTimeout(() => location.reload(), 3000);
+
+        } else {
+            dispenseDiv.className = 'result-box result-invalid';
+            dispenseDiv.innerHTML = '❌ Error: ' + result.error;
+        }
+    } catch (err) {
+        alert('Network error: ' + err.message);
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML =
+            '<i class="bi bi-capsule-pill"></i> Confirm & Dispense';
+    }
+}
+</script>
+{% endblock %}

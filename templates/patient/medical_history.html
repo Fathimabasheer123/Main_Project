@@ -1,0 +1,142 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Medical History - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .history-card {
+        background: white; padding: 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #10b981;
+        margin-bottom: 1rem;
+    }
+    .history-top {
+        display: flex; justify-content: space-between;
+        align-items: flex-start; margin-bottom: 1rem;
+    }
+    .history-disease { font-size: 1.1rem; font-weight: 600; color: #1e293b; margin: 0; }
+    .history-date { font-size: 0.85rem; color: #64748b; margin-top: 0.2rem; }
+    .status-pill {
+        padding: 0.3rem 0.8rem; border-radius: 20px;
+        font-size: 0.8rem; font-weight: 600;
+    }
+    .pill-done { background: #d1fae5; color: #065f46; }
+    .pill-active { background: #fef3c7; color: #92400e; }
+    .detail-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem; margin-bottom: 0.75rem;
+    }
+    .detail-box { background: #f8fafc; padding: 0.75rem; border-radius: 8px; }
+    .detail-label { font-size: 0.75rem; color: #64748b; }
+    .detail-value { font-weight: 600; color: #1e293b; font-size: 0.9rem; }
+    .med-box {
+        background: #f0fdf4; padding: 0.75rem 1rem;
+        border-radius: 8px; border-left: 3px solid #10b981;
+    }
+    .med-label { font-weight: 600; color: #065f46; font-size: 0.85rem; }
+    .med-value { color: #064e3b; font-size: 0.9rem; margin-top: 0.2rem; }
+    .empty-box {
+        background: white; padding: 3rem; text-align: center;
+        border-radius: 10px; color: #94a3b8;
+    }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white; text-decoration: none; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem; margin-top: 1rem;
+    }
+    .btn-back:hover { opacity: 0.9; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="page-header">
+        <div class="page-title">
+            <i class="bi bi-file-medical"></i> Medical History
+        </div>
+        <a href="{% url 'patient_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-3" style="border-radius:8px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if prescriptions %}
+        {% for rx in prescriptions %}
+        <div class="history-card">
+            <div class="history-top">
+                <div>
+                    <div class="history-disease">{{ rx.disease }}</div>
+                    <div class="history-date">
+                        <i class="bi bi-calendar3"></i>
+                        {{ rx.created_at|date:"F d, Y" }}
+                    </div>
+                </div>
+                <span class="status-pill {% if rx.is_filled %}pill-done{% else %}pill-active{% endif %}">
+                    {% if rx.is_filled %}Completed{% else %}Active{% endif %}
+                </span>
+            </div>
+
+            <div class="detail-grid">
+                <div class="detail-box">
+                    <div class="detail-label">Prescription ID</div>
+                    <div class="detail-value" style="font-family:monospace;font-size:0.8rem;">
+                        {{ rx.prescription_id }}
+                    </div>
+                </div>
+                <div class="detail-box">
+                    <div class="detail-label">Doctor</div>
+                    <div class="detail-value">
+                        {% if rx.doctor %}
+                            Dr. {{ rx.doctor.user.get_full_name }}
+                        {% else %}N/A{% endif %}
+                    </div>
+                </div>
+                <div class="detail-box">
+                    <div class="detail-label">Specialization</div>
+                    <div class="detail-value">
+                        {% if rx.doctor %}
+                            {{ rx.doctor.specialization|default:"General" }}
+                        {% else %}N/A{% endif %}
+                    </div>
+                </div>
+                {% if rx.is_filled %}
+                <div class="detail-box">
+                    <div class="detail-label">Dispensed On</div>
+                    <div class="detail-value">{{ rx.filled_at|date:"M d, Y" }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="med-box">
+                <div class="med-label"><i class="bi bi-capsule"></i> Medication</div>
+                <div class="med-value">{{ rx.drug }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <i class="bi bi-journal-medical" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
+            <h5>No Medical History</h5>
+            <p>Your prescriptions will appear here</p>
+        </div>
+    {% endif %}
+
+    <a href="{% url 'patient_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

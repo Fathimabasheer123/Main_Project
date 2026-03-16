@@ -1,0 +1,84 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Prescription History - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .subtitle { font-size: 0.85rem; color: #64748b; margin: 0; }
+    .rx-card {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #0ea5e9;
+        margin-bottom: 0.75rem; display: flex;
+        justify-content: space-between; align-items: center;
+    }
+    .rx-id { font-family: monospace; font-size: 0.9rem; color: #0ea5e9; font-weight: 600; }
+    .rx-disease { color: #1e293b; font-weight: 500; font-size: 0.95rem; }
+    .rx-meta { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .badge-filled { background: #d1fae5; color: #065f46; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .badge-pending { background: #fef3c7; color: #92400e; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .empty-box {
+        background: white; padding: 3rem; text-align: center;
+        border-radius: 10px; color: #94a3b8;
+    }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; text-decoration: none; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem; margin-top: 1rem;
+    }
+    .btn-back:hover { opacity: 0.9; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-title">
+                <i class="bi bi-clock-history"></i> Prescription History
+            </div>
+            <div class="subtitle">Total: {{ total_count|default:"0" }}</div>
+        </div>
+        <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% if prescriptions %}
+        {% for rx in prescriptions %}
+        <div class="rx-card">
+            <div>
+                <div class="rx-id">{{ rx.prescription_id }}</div>
+                <div class="rx-disease">{{ rx.disease }}</div>
+                <div class="rx-meta">
+                    {{ rx.drug|truncatewords:6 }} &bull;
+                    {{ rx.created_at|date:"d M Y, H:i" }}
+                </div>
+            </div>
+            {% if rx.is_filled %}
+                <span class="badge-filled"><i class="bi bi-check-circle-fill"></i> Filled</span>
+            {% else %}
+                <span class="badge-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <i class="bi bi-inbox" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
+            <h5>No Prescriptions Yet</h5>
+            <p>Prescriptions you create will appear here</p>
+        </div>
+    {% endif %}
+
+    <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

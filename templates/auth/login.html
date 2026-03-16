@@ -1,0 +1,125 @@
+<!-- template/auth/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Login - MedChain{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <!-- Back to Home Button -->
+            <div class="mb-3">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+
+            <div class="card card-custom shadow-lg p-5">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <i class="bi bi-shield-lock" style="font-size: 4rem; color: #2563eb;"></i>
+                    <h2 class="fw-bold mt-3">Sign In</h2>
+                    <p class="text-muted">Access your MedChain account</p>
+                </div>
+
+                <!-- Login Form -->
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    
+                    <!-- Username -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-person-circle"></i> Username
+                        </label>
+                        <input type="text" 
+                               class="form-control form-control-lg" 
+                               name="username" 
+                               placeholder="Enter your username"
+                               required
+                               autofocus>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-lock-fill"></i> Password
+                        </label>
+                        <input type="password" 
+                               class="form-control form-control-lg" 
+                               name="password" 
+                               placeholder="Enter your password"
+                               required>
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-person-badge"></i> Select Your Role
+                        </label>
+                        <select class="form-select form-select-lg" name="user_type" required>
+                            <option value="">Choose your role</option>
+                            <option value="doctor">
+                                👨‍⚕️ Doctor 
+                            </option>
+                            <option value="patient">
+                                👤 Patient 
+                            </option>
+                            <option value="pharmacy">
+                                🏥 Pharmacy 
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                            <label class="form-check-label" for="remember">
+                                Keep me signed in
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100 py-3 fw-semibold mb-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>
+                        Sign In
+                    </button>
+
+                    <!-- Forgot Password Link -->
+                    <div class="text-center mb-3">
+                        <a href="#" class="text-decoration-none small">
+                            Forgot your password?
+                        </a>
+                    </div>
+                </form>
+
+                <!-- Divider -->
+                <hr class="my-4">
+
+                <!-- Register Link -->
+                <div class="text-center">
+                    <p class="mb-2 text-muted">Don't have an account?</p>
+                    <a href="{% url 'register' %}" class="btn btn-outline-success w-100 py-2">
+                        <i class="bi bi-person-plus"></i> Create New Account
+                    </a>
+                </div>
+            </div>
+
+            <!-- Security Info -->
+            <div class="card mt-3 border-0 bg-light">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check text-success me-1"></i>
+                        Secured with blockchain encryption
+                        <i class="bi bi-dot"></i>
+                        <i class="bi bi-lock-fill text-primary me-1"></i>
+                        256-bit SSL protected
+                    </small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,532 @@
+<!-- templates/auth/register.html -->
+{% extends 'base.html' %}
+
+{% block title %}Register - MedChain{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+
+            <!-- Back to Home -->
+            <div class="mb-3">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card shadow-lg p-5">
+
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <i class="bi bi-person-plus-fill"
+                       style="font-size:4rem;color:#10b981;"></i>
+                    <h2 class="fw-bold mt-3">Create Your Account</h2>
+                    <p class="text-muted">Join MedChain</p>
+                </div>
+
+                <!-- Registration Form -->
+                <form method="post"
+                      action="{% url 'register' %}"
+                      enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-person-badge"></i>
+                            Select Your Role *
+                        </label>
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check"
+                                       name="user_type" id="type_doctor"
+                                       value="doctor" required>
+                                <label class="btn btn-outline-primary w-100 py-4"
+                                       for="type_doctor">
+                                    <i class="bi bi-clipboard2-pulse"
+                                       style="font-size:2rem;"></i>
+                                    <div class="mt-2 fw-bold">Doctor</div>
+                                    <small class="text-muted">
+                                        Prescribe medicine
+                                    </small>
+                                </label>
+                            </div>
+
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check"
+                                       name="user_type" id="type_patient"
+                                       value="patient">
+                                <label class="btn btn-outline-success w-100 py-4"
+                                       for="type_patient">
+                                    <i class="bi bi-person-heart"
+                                       style="font-size:2rem;"></i>
+                                    <div class="mt-2 fw-bold">Patient</div>
+                                    <small class="text-muted">
+                                        View prescriptions
+                                    </small>
+                                </label>
+                            </div>
+
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check"
+                                       name="user_type" id="type_pharmacy"
+                                       value="pharmacy">
+                                <label class="btn btn-outline-warning w-100 py-4"
+                                       for="type_pharmacy">
+                                    <i class="bi bi-hospital"
+                                       style="font-size:2rem;"></i>
+                                    <div class="mt-2 fw-bold">Pharmacy</div>
+                                    <small class="text-muted">
+                                        Dispense medicine
+                                    </small>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Personal Information -->
+                    <h5 class="mb-3">
+                        <i class="bi bi-person-vcard"></i>
+                        Personal Information
+                    </h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control"
+                                   name="first_name"
+                                   placeholder="Enter first name"
+                                   required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control"
+                                   name="last_name"
+                                   placeholder="Enter last name"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email Address *</label>
+                            <input type="email" class="form-control"
+                                   name="email"
+                                   placeholder="your.email@example.com"
+                                   required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control"
+                                   name="phone"
+                                   placeholder="10-digit mobile number"
+                                   pattern="[1-9][0-9]{9}"
+                                   maxlength="10" required>
+                            <small class="text-muted">
+                                10 digits, cannot start with 0
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Username *</label>
+                        <input type="text" class="form-control"
+                               name="username"
+                               placeholder="Choose a unique username"
+                               required>
+                        <small class="text-muted">
+                            Letters, numbers, underscores only
+                        </small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password *</label>
+                            <input type="password" class="form-control"
+                                   name="password1"
+                                   placeholder="Create password"
+                                   minlength="8" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Confirm Password *</label>
+                            <input type="password" class="form-control"
+                                   name="password2"
+                                   placeholder="Confirm password"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 mb-3">
+                        <small>
+                            <strong>Password must contain:</strong>
+                            <ul class="mb-0 mt-1" style="font-size:0.85rem;">
+                                <li>At least 8 characters</li>
+                                <li>One uppercase letter (A-Z)</li>
+                                <li>One lowercase letter (a-z)</li>
+                                <li>One number (0-9)</li>
+                                <li>One special character (!@#$%^&*)</li>
+                            </ul>
+                        </small>
+                    </div>
+
+                    <!-- ======== DOCTOR FIELDS ======== -->
+                    <div id="doctorFields" style="display:none;">
+                        <hr class="my-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-clipboard2-pulse" style="color:#0ea5e9;"></i>
+                            Doctor Information
+                        </h5>
+
+                        <div class="alert alert-warning py-2 mb-3">
+                            <small>
+                                <i class="bi bi-clock-history me-1"></i>
+                                <strong>Verification Required:</strong>
+                                Your account will be reviewed by admin before you can login.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Medical License Number *</label>
+                            <input type="text" class="form-control"
+                                   name="license_number"
+                                   placeholder="e.g. MCI-2024-12345">
+                            <small class="text-muted">NMC or State Medical Council number</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Specialization</label>
+                            <input type="text" class="form-control"
+                                   name="specialization"
+                                   placeholder="e.g. General Physician, Cardiologist"
+                                   value="General Physician">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Hospital / Clinic Name</label>
+                            <input type="text" class="form-control"
+                                   name="hospital"
+                                   placeholder="Current workplace">
+                        </div>
+
+                        <!-- Document Preview -->
+                        <div id="doctorDocPreview" style="display:none;margin-top:0.5rem;">
+                            <img id="doctorDocImg"
+                                 style="max-width:200px;border-radius:8px;border:1px solid #e2e8f0;"/>
+                            <div id="doctorDocPdf"
+                                 style="display:none;padding:0.5rem;background:#f1f5f9;border-radius:6px;">
+                                <i class="bi bi-file-pdf text-danger"></i>
+                                <span id="doctorDocName"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ======== PHARMACY FIELDS ======== -->
+                    <div id="pharmacyFields" style="display:none;">
+                        <hr class="my-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-hospital" style="color:#f59e0b;"></i>
+                            Pharmacy Information
+                        </h5>
+
+                        <div class="alert alert-warning py-2 mb-3">
+                            <small>
+                                <i class="bi bi-clock-history me-1"></i>
+                                <strong>Verification Required:</strong>
+                                Your pharmacy will be reviewed by admin before you can login.
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Pharmacy Name *</label>
+                            <input type="text" class="form-control"
+                                   name="pharmacy_name"
+                                   placeholder="Official pharmacy name">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Drug License Number *</label>
+                            <input type="text" class="form-control"
+                                   name="drug_license"
+                                   placeholder="e.g. KL/DL/2024/567">
+                            <small class="text-muted">State Drug Authority license number</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Pharmacy Address</label>
+                            <textarea class="form-control"
+                                      name="address" rows="2"
+                                      placeholder="Complete pharmacy address"></textarea>
+                        </div>
+
+                        <!-- Document Preview -->
+                        <div id="pharmacyDocPreview" style="display:none;margin-top:0.5rem;">
+                            <img id="pharmacyDocImg"
+                                 style="max-width:200px;border-radius:8px;border:1px solid #e2e8f0;"/>
+                            <div id="pharmacyDocPdf"
+                                 style="display:none;padding:0.5rem;background:#f1f5f9;border-radius:6px;">
+                                <i class="bi bi-file-pdf text-danger"></i>
+                                <span id="pharmacyDocName"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ======== PATIENT FIELDS ======== -->
+                    <div id="patientFields" style="display:none;">
+                        <hr class="my-4">
+                        <h5 class="mb-3">
+                            <i class="bi bi-person-heart" style="color:#10b981;"></i>
+                            Patient Information
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" name="date_of_birth">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Gender</label>
+                                <select class="form-select" name="gender">
+                                    <option value="">Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Blood Group</label>
+                            <select class="form-select" name="blood_group">
+                                <option value="Unknown">Unknown</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+
+                        <!-- ── Claim Walk-in Account ── -->
+                        <div class="card border-info mt-3 mb-3">
+                            <div class="card-body py-3">
+                                <h6 class="card-title text-info mb-2">
+                                    <i class="bi bi-link-45deg me-1"></i>
+                                    Link Past Prescriptions (Optional)
+                                </h6>
+                                <p class="text-muted mb-3" style="font-size:0.85rem;">
+                                    If a doctor registered you as a walk-in patient before,
+                                    enter your Walk-in ID and phone to transfer your past
+                                    prescriptions to this new account.
+                                </p>
+
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Walk-in Patient ID
+                                        <small class="text-muted">(optional)</small>
+                                    </label>
+                                    <input type="text" class="form-control"
+                                           name="walkin_patient_id"
+                                           placeholder="e.g. P-AB123"
+                                           style="text-transform:uppercase;font-family:monospace;">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Given by your doctor at the clinic
+                                    </small>
+                                </div>
+
+                                <div class="mb-2">
+                                    <label class="form-label">
+                                        Phone number used at clinic
+                                        <small class="text-muted">(required to link)</small>
+                                    </label>
+                                    <input type="tel" class="form-control"
+                                           name="walkin_phone"
+                                           placeholder="Phone number you gave the doctor"
+                                           maxlength="10">
+                                    <small class="text-muted">
+                                        Must match the phone the doctor entered for you
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- ======== END PATIENT FIELDS ======== -->
+
+                    <hr class="my-4">
+
+                    <!-- Terms -->
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                                   name="terms" id="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the Terms of Service and Privacy Policy
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit"
+                            class="btn btn-success btn-lg w-100 py-3 fw-semibold mb-3"
+                            id="submitBtn">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Create My Account
+                    </button>
+
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="mb-2 text-muted">Already have an account?</p>
+                    <a href="{% url 'login' %}"
+                       class="btn btn-outline-primary w-100 py-2">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Login here
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Security Info -->
+            <div class="card mt-3 border-0 bg-light">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check text-success me-1"></i>
+                        Secured with blockchain encryption
+                        <i class="bi bi-dot"></i>
+                        <i class="bi bi-lock-fill text-primary me-1"></i>
+                        DPDP 2023 Compliant
+                    </small>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ======== Show/Hide Role Fields ========
+document.querySelectorAll('input[name="user_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.getElementById('doctorFields').style.display =
+            this.value === 'doctor'   ? 'block' : 'none';
+        document.getElementById('pharmacyFields').style.display =
+            this.value === 'pharmacy' ? 'block' : 'none';
+        document.getElementById('patientFields').style.display =
+            this.value === 'patient'  ? 'block' : 'none';
+    });
+});
+
+// ======== Auto uppercase Walk-in ID ========
+const walkinInput = document.querySelector('input[name="walkin_patient_id"]');
+if (walkinInput) {
+    walkinInput.addEventListener('input', function() {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+}
+
+// ======== Document Preview — Doctor ========
+const doctorDoc = document.getElementById('doctorDocument');
+if (doctorDoc) {
+    doctorDoc.addEventListener('change', function() {
+        const file    = this.files[0];
+        const preview = document.getElementById('doctorDocPreview');
+        const img     = document.getElementById('doctorDocImg');
+        const pdf     = document.getElementById('doctorDocPdf');
+        const name    = document.getElementById('doctorDocName');
+        if (!file) { preview.style.display = 'none'; return; }
+        preview.style.display = 'block';
+        if (file.type === 'application/pdf') {
+            img.style.display = 'none'; pdf.style.display = 'block';
+            name.textContent = file.name;
+        } else {
+            pdf.style.display = 'none'; img.style.display = 'block';
+            const reader = new FileReader();
+            reader.onload = e => img.src = e.target.result;
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// ======== Document Preview — Pharmacy ========
+const pharmacyDoc = document.getElementById('pharmacyDocument');
+if (pharmacyDoc) {
+    pharmacyDoc.addEventListener('change', function() {
+        const file    = this.files[0];
+        const preview = document.getElementById('pharmacyDocPreview');
+        const img     = document.getElementById('pharmacyDocImg');
+        const pdf     = document.getElementById('pharmacyDocPdf');
+        const name    = document.getElementById('pharmacyDocName');
+        if (!file) { preview.style.display = 'none'; return; }
+        preview.style.display = 'block';
+        if (file.type === 'application/pdf') {
+            img.style.display = 'none'; pdf.style.display = 'block';
+            name.textContent = file.name;
+        } else {
+            pdf.style.display = 'none'; img.style.display = 'block';
+            const reader = new FileReader();
+            reader.onload = e => img.src = e.target.result;
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// ======== Password Match + Role Validation ========
+document.querySelector('form').addEventListener('submit', function(e) {
+    const p1 = document.querySelector('input[name="password1"]').value;
+    const p2 = document.querySelector('input[name="password2"]').value;
+
+    if (p1 !== p2) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return;
+    }
+
+    const role = document.querySelector('input[name="user_type"]:checked');
+    if (!role) {
+        e.preventDefault();
+        alert('Please select your role!');
+        return;
+    }
+
+    // Validate walk-in claim: if ID given, phone must also be given
+    if (role.value === 'patient') {
+        const wid   = document.querySelector('input[name="walkin_patient_id"]').value.trim();
+        const wph   = document.querySelector('input[name="walkin_phone"]').value.trim();
+        if (wid && !wph) {
+            e.preventDefault();
+            alert('Please enter the phone number used at the clinic to link your walk-in record.');
+            return;
+        }
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating Account...';
+    btn.disabled = true;
+});
+</script>
+{% endblock %}

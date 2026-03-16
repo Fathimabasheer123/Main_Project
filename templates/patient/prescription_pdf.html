@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 11pt; color: #1a1a1a; background: white; }
+    .page { width: 210mm; min-height: 297mm; padding: 18mm 16mm; margin: 0 auto; }
+
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12pt; border-bottom: 3pt solid #059669; margin-bottom: 14pt; }
+    .brand-name { font-size: 22pt; font-weight: 900; color: #059669; letter-spacing: -1px; }
+    .brand-sub  { font-size: 8pt; color: #64748b; margin-top: 2pt; }
+    .header-badge { background: #059669; color: white; padding: 4pt 12pt; border-radius: 20pt; font-size: 8pt; font-weight: 700; letter-spacing: 0.5px; }
+
+    /* Rx ID bar */
+    .rx-bar { background: #f0fdf4; border: 1.5pt solid #bbf7d0; border-radius: 8pt; padding: 8pt 12pt; margin-bottom: 14pt; display: flex; justify-content: space-between; align-items: center; }
+    .rx-id  { font-family: 'Courier New', monospace; font-size: 12pt; font-weight: 700; color: #059669; }
+    .rx-dates { font-size: 8pt; color: #475569; text-align: right; }
+
+    /* Sections */
+    .section { margin-bottom: 12pt; }
+    .section-title { font-size: 8pt; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6pt; padding-bottom: 3pt; border-bottom: 1pt solid #e2e8f0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8pt; }
+
+    .info-box { background: #f8fafc; border-radius: 6pt; padding: 6pt 9pt; border: 1pt solid #e2e8f0; }
+    .info-label { font-size: 7pt; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+    .info-value { font-size: 10pt; font-weight: 600; color: #0f172a; margin-top: 1pt; }
+
+    .med-box { background: #f0f9ff; border: 1.5pt solid #bae6fd; border-radius: 8pt; padding: 8pt 12pt; margin-bottom: 8pt; }
+    .med-name { font-size: 14pt; font-weight: 800; color: #0369a1; }
+    .med-sub  { font-size: 9pt; color: #475569; margin-top: 2pt; }
+
+    .instructions-box { background: #fffbeb; border-left: 3pt solid #f59e0b; padding: 8pt 12pt; border-radius: 0 6pt 6pt 0; font-size: 9pt; }
+    .adr-box { background: #fff1f2; border-left: 3pt solid #f43f5e; padding: 8pt 12pt; border-radius: 0 6pt 6pt 0; font-size: 9pt; }
+
+    /* Blockchain section */
+    .blockchain-bar { background: #0f172a; color: white; border-radius: 8pt; padding: 8pt 12pt; margin-top: 14pt; display: flex; align-items: center; gap: 8pt; }
+    .chain-icon  { font-size: 16pt; }
+    .chain-label { font-size: 7pt; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
+    .chain-value { font-size: 7pt; font-family: 'Courier New', monospace; color: #a5f3fc; word-break: break-all; }
+
+    /* QR and footer */
+    .bottom-row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 14pt; }
+    .signature-line { border-top: 1pt solid #94a3b8; width: 140pt; text-align: center; padding-top: 4pt; font-size: 7pt; color: #64748b; }
+    .qr-area { text-align: center; }
+    .qr-label { font-size: 7pt; color: #64748b; margin-top: 4pt; }
+
+    .validity-badge { background: #d1fae5; color: #065f46; padding: 2pt 8pt; border-radius: 20pt; font-size: 7.5pt; font-weight: 700; display: inline-block; margin-top: 4pt; }
+
+    @media print {
+        body { background: white; }
+        .page { padding: 12mm; width: 100%; }
+    }
+    @page { size: A4; margin: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="brand-name">🔗 MedChain</div>
+            <div class="brand-sub">Blockchain Medical Prescription System &nbsp;|&nbsp; DPDP 2023 Compliant</div>
+        </div>
+        <div class="header-badge">✅ BLOCKCHAIN VERIFIED</div>
+    </div>
+
+    <!-- Prescription ID Bar -->
+    <div class="rx-bar">
+        <div>
+            <div style="font-size:7pt;color:#64748b;font-weight:700;text-transform:uppercase;">Prescription ID</div>
+            <div class="rx-id">{{ rx.prescription_id }}</div>
+        </div>
+        <div class="rx-dates">
+            <div>Issued: <strong>{{ rx.created_at|date:"d M Y" }}</strong></div>
+            <div>Expires: <strong>{{ rx.expiry_date|date:"d M Y" }}</strong></div>
+            {% if rx.is_filled %}<div style="color:#059669;font-weight:700;margin-top:3pt;">✓ DISPENSED {{ rx.filled_at|date:"d M Y" }}</div>{% endif %}
+        </div>
+    </div>
+
+    <!-- Doctor Info -->
+    <div class="section">
+        <div class="section-title">🩺 Prescribing Doctor</div>
+        <div class="two-col">
+            <div class="info-box">
+                <div class="info-label">Doctor Name</div>
+                <div class="info-value">Dr. {% if rx.doctor %}{{ rx.doctor.user.get_full_name }}{% else %}N/A{% endif %}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">License / Specialization</div>
+                <div class="info-value">{% if rx.doctor %}{{ rx.doctor.license_number }}{% if rx.doctor.specialization %} — {{ rx.doctor.specialization }}{% endif %}{% else %}N/A{% endif %}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Info -->
+    <div class="section">
+        <div class="section-title">👤 Patient Information</div>
+        <div class="three-col">
+            <div class="info-box">
+                <div class="info-label">Patient Name</div>
+                <div class="info-value">{{ rx.patient_name }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Patient ID</div>
+                <div class="info-value" style="font-family:monospace;">{{ rx.patient_id_str }}</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Blood Group</div>
+                <div class="info-value">
+                    {% if rx.patient %}{{ rx.patient.blood_group }}
+                    {% elif rx.walkin_patient %}{{ rx.walkin_patient.blood_group }}
+                    {% else %}—{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnosis -->
+    <div class="section">
+        <div class="section-title">🔬 Diagnosis</div>
+        <div class="info-box">
+            <div class="info-label">Disease / Condition</div>
+            <div class="info-value" style="font-size:12pt;">{{ rx.disease }}</div>
+        </div>
+    </div>
+
+    <!-- Medication -->
+    <div class="section">
+        <div class="section-title">💊 Prescribed Medication</div>
+        <div class="med-box">
+            <div class="med-name">{{ rx.drug }}</div>
+            <div class="med-sub">
+                {% if rx.dosage %}Dosage: <strong>{{ rx.dosage }}</strong>{% endif %}
+                {% if rx.frequency %}&nbsp;|&nbsp;Frequency: <strong>{{ rx.frequency }}</strong>{% endif %}
+                {% if rx.duration %}&nbsp;|&nbsp;Duration: <strong>{{ rx.duration }}</strong>{% endif %}
+            </div>
+        </div>
+        {% if rx.instructions %}
+        <div class="instructions-box">
+            <strong>📋 Instructions:</strong> {{ rx.instructions }}
+        </div>
+        {% endif %}
+        {% if rx.adverse_effects and rx.adverse_effects != 'None noted' %}
+        <div class="adr-box" style="margin-top:6pt;">
+            <strong>⚠️ Side Effects / ADR Warnings:</strong> {{ rx.adverse_effects }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Blockchain Verification -->
+    {% if rx.transaction_hash %}
+    <div class="blockchain-bar">
+        <div class="chain-icon">⛓️</div>
+        <div style="flex:1;">
+            <div class="chain-label">Ethereum Blockchain Transaction</div>
+            <div class="chain-value">{{ rx.transaction_hash }}</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="chain-label">Block</div>
+            <div style="color:white;font-weight:700;font-size:10pt;">{{ rx.block_number }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bottom Row: Signature + QR -->
+    <div class="bottom-row">
+        <div>
+            <div class="signature-line">
+                Dr. {% if rx.doctor %}{{ rx.doctor.user.get_full_name }}{% endif %}
+            </div>
+            {% if rx.expiry_date and not rx.is_filled %}
+            <div class="validity-badge">Valid until {{ rx.expiry_date|date:"d M Y" }}</div>
+            {% endif %}
+        </div>
+
+        <div class="qr-area">
+            {% if qr_b64 %}
+            <img src="data:image/png;base64,{{ qr_b64 }}" width="80" height="80">
+            <div class="qr-label">Scan to verify</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

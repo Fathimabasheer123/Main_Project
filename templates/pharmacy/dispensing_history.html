@@ -1,0 +1,168 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Dispensing History - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f7fa;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .container-wrapper {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .history-table {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
+    th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    tr:hover {
+        background: #f8fafc;
+    }
+
+    .badge {
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        margin-top: 2rem;
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        color: #cbd5e1;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="bi bi-clock-history"></i> Dispensing History
+        </h1>
+        <p class="page-subtitle">Recently dispensed prescriptions</p>
+    </div>
+
+    {% if prescriptions %}
+        <div class="history-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Prescription ID</th>
+                        <th>Patient</th>
+                        <th>Disease</th>
+                        <th>Dispensed On</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rx in prescriptions %}
+                        <tr>
+                            <td><strong>{{ rx.prescription_id }}</strong></td>
+                            <td>
+                                {% if rx.patient %}
+                                    {{ rx.patient.user.get_full_name }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>{{ rx.disease }}</td>
+                            <td>{{ rx.filled_at|date:"M d, Y - h:i A" }}</td>
+                            <td>
+                                <span class="badge badge-success">
+                                    <i class="bi bi-check-circle"></i> Dispensed
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="history-table">
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h3>No Dispensing History</h3>
+                <p>Dispensed prescriptions will appear here</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <a href="{% url 'pharmacy_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

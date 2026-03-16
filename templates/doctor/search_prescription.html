@@ -1,0 +1,98 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Search Prescription - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .search-card {
+        background: white; padding: 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1rem;
+    }
+    .rx-card {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #0ea5e9;
+        margin-bottom: 0.75rem; display: flex;
+        justify-content: space-between; align-items: center;
+    }
+    .rx-id { font-family: monospace; font-size: 0.9rem; color: #0ea5e9; font-weight: 600; }
+    .rx-disease { color: #1e293b; font-weight: 500; }
+    .rx-meta { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .badge-filled { background: #d1fae5; color: #065f46; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .badge-pending { background: #fef3c7; color: #92400e; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .empty-box { background: white; padding: 3rem; text-align: center; border-radius: 10px; color: #94a3b8; }
+    .btn-blue {
+        padding: 0.65rem 1.2rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; border: none; border-radius: 8px;
+        font-weight: 600; cursor: pointer;
+    }
+    .btn-blue:hover { opacity: 0.9; }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; text-decoration: none; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem; margin-top: 1rem;
+    }
+    .btn-back:hover { opacity: 0.9; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="page-header">
+        <div class="page-title">
+            <i class="bi bi-search"></i> Search Prescriptions
+        </div>
+        <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <div class="search-card">
+        <form method="GET" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control"
+                   placeholder="Search by prescription ID or disease..."
+                   value="{{ query|default:'' }}">
+            <button type="submit" class="btn-blue">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </form>
+    </div>
+
+    {% if results %}
+        {% for rx in results %}
+        <div class="rx-card">
+            <div>
+                <div class="rx-id">{{ rx.prescription_id }}</div>
+                <div class="rx-disease">{{ rx.disease }}</div>
+                <div class="rx-meta">
+                    {{ rx.created_at|date:"d M Y, H:i" }}
+                </div>
+            </div>
+            {% if rx.is_filled %}
+                <span class="badge-filled">Filled</span>
+            {% else %}
+                <span class="badge-pending">Pending</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% elif query %}
+        <div class="empty-box">
+            <i class="bi bi-search" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
+            <h5>No Results</h5>
+            <p>No prescriptions found for "{{ query }}"</p>
+        </div>
+    {% endif %}
+
+    <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

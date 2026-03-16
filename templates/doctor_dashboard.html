@@ -1,0 +1,1000 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Doctor Dashboard - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    * { box-sizing: border-box; }
+    .dashboard-container { display: flex; min-height: 100vh; background: #f0f4f8; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 60%, #0369a1 100%);
+        color: white; position: fixed; height: 100vh;
+        overflow-y: auto; z-index: 1000;
+        display: flex; flex-direction: column;
+        box-shadow: 4px 0 20px rgba(14,165,233,0.3);
+    }
+    .sidebar-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+        background: rgba(0,0,0,0.1);
+    }
+    .sidebar-title { font-size: 1.3rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.5rem; letter-spacing: -0.3px; }
+    .sidebar-subtitle { font-size: 0.82rem; opacity: 0.8; margin-top: 0.3rem; }
+    .sidebar-menu { padding: 0.75rem 0; flex: 1; }
+    .menu-item {
+        padding: 0.8rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+        color: rgba(255,255,255,0.85); text-decoration: none;
+        border-left: 3px solid transparent;
+        font-size: 0.88rem; font-weight: 500; transition: all 0.2s;
+    }
+    .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.15); color: white; border-left-color: white; }
+    .menu-item i { width: 18px; text-align: center; font-size: 0.95rem; }
+    .sidebar-footer { padding: 0.75rem 0; border-top: 1px solid rgba(255,255,255,0.2); }
+
+    /* ── Main ── */
+    .main-content { margin-left: 260px; flex: 1; padding: 1.5rem; }
+    .top-bar {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+        border: 1px solid #e2e8f0;
+    }
+    .page-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+    .user-avatar {
+        width: 42px; height: 42px; border-radius: 50%;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        display: flex; align-items: center; justify-content: center;
+        color: white; font-weight: 800; font-size: 1rem;
+        box-shadow: 0 3px 10px rgba(14,165,233,0.4);
+    }
+
+    /* ── Stats ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+        background: white; padding: 1.25rem 1.5rem; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        display: flex; justify-content: space-between; align-items: center;
+        border: 1px solid #e2e8f0; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .stat-label { font-size: 0.78rem; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 2rem; font-weight: 800; color: #0f172a; letter-spacing: -1px; }
+    .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .icon-blue   { background: #dbeafe; color: #0ea5e9; }
+    .icon-green  { background: #d1fae5; color: #10b981; }
+    .icon-orange { background: #fed7aa; color: #f59e0b; }
+    .icon-purple { background: #ede9fe; color: #8b5cf6; }
+
+    /* ── Cards ── */
+    .content-card {
+        background: white; padding: 1.5rem; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        margin-bottom: 1.5rem; border: 1px solid #e2e8f0;
+    }
+    .card-title {
+        font-size: 0.95rem; font-weight: 700; color: #0f172a;
+        margin-bottom: 1rem; padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .rx-row {
+        padding: 0.85rem 1rem; border-radius: 8px;
+        border-left: 3px solid #0ea5e9; background: #f8fafc;
+        margin-bottom: 0.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+        transition: background 0.15s;
+    }
+    .rx-row:hover { background: #f0f9ff; }
+    .rx-id { font-family: 'Courier New', monospace; font-size: 0.82rem; color: #0284c7; font-weight: 600; }
+    .rx-info { font-size: 0.82rem; color: #64748b; margin-top: 0.15rem; }
+    .badge-filled { background: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+    .badge-pending { background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; border: none; padding: 0.6rem 1.2rem;
+        border-radius: 8px; font-weight: 600; font-size: 0.88rem;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
+        transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary-custom:hover { opacity: 0.9; color: white; transform: translateY(-1px); }
+    .empty-msg { text-align: center; color: #94a3b8; padding: 2.5rem; }
+
+    /* ── Quick Action Buttons ── */
+    .quick-actions { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .quick-btn {
+        flex: 1; min-width: 160px; padding: 1rem;
+        border-radius: 12px; border: 2px solid transparent;
+        display: flex; flex-direction: column; align-items: center;
+        gap: 0.4rem; cursor: pointer; transition: all 0.2s;
+        text-decoration: none; font-weight: 600; font-size: 0.85rem;
+    }
+    .quick-btn-blue { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+    .quick-btn-blue:hover { background: #1d4ed8; color: white; }
+    .quick-btn-green { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+    .quick-btn-green:hover { background: #10b981; color: white; }
+    .quick-btn-purple { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+    .quick-btn-purple:hover { background: #7c3aed; color: white; }
+    .quick-btn i { font-size: 1.6rem; }
+
+    /* ── Patient Lookup Card ── */
+    .patient-found-card {
+        background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+        border: 2px solid #10b981; border-radius: 12px;
+        padding: 1.25rem;
+    }
+    .patient-badge { background: #10b981; color: white; padding: 0.2rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; font-family: monospace; }
+    .patient-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; }
+    .p-detail { background: white; border-radius: 8px; padding: 0.5rem 0.75rem; }
+    .p-detail-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
+    .p-detail-value { font-size: 0.88rem; font-weight: 700; color: #0f172a; }
+
+    /* ── Symptom Tag Input ── */
+    .symptom-input-box {
+        border: 2px solid #cbd5e1; border-radius: 10px;
+        padding: 0.6rem; min-height: 80px; background: white;
+        cursor: text; display: flex; flex-wrap: wrap;
+        align-items: flex-start; gap: 0.3rem; transition: border-color 0.2s;
+    }
+    .symptom-input-box:focus-within { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
+    .symptom-chip {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; padding: 0.25rem 0.6rem;
+        border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+    }
+    .symptom-chip-remove { cursor: pointer; opacity: 0.8; font-weight: 700; font-size: 1rem; line-height: 1; }
+    .symptom-chip-remove:hover { opacity: 1; }
+    .quick-tag {
+        display: inline-block; background: #f1f5f9; color: #475569;
+        padding: 0.25rem 0.65rem; border-radius: 20px;
+        font-size: 0.75rem; margin: 0.15rem; cursor: pointer;
+        border: 1px solid #e2e8f0; transition: all 0.15s; font-weight: 500;
+    }
+    .quick-tag:hover { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+    .quick-tag.used { background: #dbeafe; color: #0284c7; border-color: #93c5fd; opacity: 0.6; pointer-events: none; }
+
+    /* ── Steps ── */
+    .steps-bar { display: flex; gap: 0; margin-bottom: 1.25rem; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .step-item { flex: 1; padding: 0.7rem 0.5rem; text-align: center; font-size: 0.8rem; font-weight: 600; background: #f8fafc; color: #94a3b8; border-right: 1px solid #e2e8f0; transition: all 0.3s; }
+    .step-item:last-child { border-right: none; }
+    .step-item.active { background: #0ea5e9; color: white; }
+    .step-item.done   { background: #10b981; color: white; }
+
+    /* ── AI Box ── */
+    .ai-prediction-box { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0ea5e9; border-radius: 12px; padding: 1.25rem; }
+    .ai-box-header { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; font-weight: 700; color: #0369a1; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(14,165,233,0.2); }
+    .ai-result-row { background: white; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 0.6rem; border: 1px solid #bae6fd; display: flex; justify-content: space-between; align-items: center; }
+    .ai-result-label { font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .ai-result-value { font-size: 1rem; font-weight: 700; color: #0f172a; margin-top: 0.1rem; }
+    .conf-badge { padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+    .conf-high   { background: #d1fae5; color: #065f46; }
+    .conf-medium { background: #fef3c7; color: #92400e; }
+    .conf-low    { background: #fee2e2; color: #991b1b; }
+    .adr-pill { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; margin: 0.15rem; }
+    .adr-severe   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .adr-moderate { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .adr-mild     { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .ai-hint { font-size: 0.75rem; color: #6366f1; margin-top: 0.25rem; font-style: italic; }
+    .section-heading { font-size: 0.85rem; font-weight: 700; color: #0ea5e9; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title"><i class="bi bi-heart-pulse-fill"></i> MedChain</div>
+            <div class="sidebar-subtitle">Dr. {{ user.first_name }} {{ user.last_name }}</div>
+        </div>
+        <div class="sidebar-menu">
+            <a href="{% url 'doctor_dashboard' %}" class="menu-item active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="#" class="menu-item" onclick="showCreateModal(); return false;"><i class="bi bi-plus-circle-fill"></i> New Prescription</a>
+            <a href="#" class="menu-item" onclick="showWalkinModal(); return false;"><i class="bi bi-person-plus-fill"></i> Register Patient</a>
+            <a href="{% url 'view_patients' %}" class="menu-item"><i class="bi bi-people-fill"></i> My Patients</a>
+            <a href="{% url 'prescription_history_doctor' %}" class="menu-item"><i class="bi bi-clock-history"></i> History</a>
+            <a href="{% url 'search_prescription_doctor' %}" class="menu-item"><i class="bi bi-search"></i> Search</a>
+            <a href="{% url 'update_profile_doctor' %}" class="menu-item"><i class="bi bi-gear-fill"></i> Settings</a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="menu-item"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div>
+                <div class="page-title">Dashboard</div>
+                <div style="font-size:0.82rem;color:#64748b;">{% now "l, d F Y" %}</div>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="text-end">
+                    <div style="font-weight:700;color:#0f172a;font-size:0.95rem;">Dr. {{ user.first_name }} {{ user.last_name }}</div>
+                    <div style="font-size:0.78rem;color:#64748b;">Licensed Physician</div>
+                </div>
+                <div class="user-avatar">{{ user.first_name.0 }}</div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div><div class="stat-label">Total Prescriptions</div><div class="stat-value">{{ total_prescriptions|default:"0" }}</div></div>
+                <div class="stat-icon icon-blue"><i class="bi bi-file-earmark-medical-fill"></i></div>
+            </div>
+            <div class="stat-card">
+                <div><div class="stat-label">Pending</div><div class="stat-value">{{ pending_approvals|default:"0" }}</div></div>
+                <div class="stat-icon icon-orange"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+            <div class="stat-card">
+                <div><div class="stat-label">Patients</div><div class="stat-value">{{ total_patients|default:"0" }}</div></div>
+                <div class="stat-icon icon-green"><i class="bi bi-people-fill"></i></div>
+            </div>
+            <div class="stat-card">
+                <div><div class="stat-label">Success Rate</div><div class="stat-value">{{ success_rate|default:"0" }}%</div></div>
+                <div class="stat-icon icon-purple"><i class="bi bi-trophy-fill"></i></div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="#" class="quick-btn quick-btn-blue" onclick="showCreateModal(); return false;">
+                <i class="bi bi-file-earmark-plus"></i>New Prescription
+            </a>
+            <a href="#" class="quick-btn quick-btn-green" onclick="showWalkinModal(); return false;">
+                <i class="bi bi-person-plus-fill"></i>Register Walk-in Patient
+            </a>
+            <a href="{% url 'view_patients' %}" class="quick-btn quick-btn-purple">
+                <i class="bi bi-people-fill"></i>View All Patients
+            </a>
+        </div>
+
+        <!-- Recent Prescriptions -->
+        <div class="content-card">
+            <div class="card-title">
+                <span><i class="bi bi-clock-history me-2"></i>Recent Prescriptions</span>
+                <button class="btn-primary-custom" onclick="showCreateModal()"><i class="bi bi-plus-circle"></i> New Prescription</button>
+            </div>
+            {% if recent_prescriptions %}
+                {% for rx in recent_prescriptions %}
+                <div class="rx-row">
+                    <div>
+                        <div class="rx-id">{{ rx.prescription_id }}</div>
+                        <div class="rx-info">{{ rx.patient_name }} &bull; {{ rx.disease }} &bull; {{ rx.created_at|date:"d M Y, H:i" }}</div>
+                    </div>
+                    {% if rx.is_filled %}<span class="badge-filled">✓ Filled</span>
+                    {% else %}<span class="badge-pending">Pending</span>{% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-msg">
+                    <i class="bi bi-inbox" style="font-size:2.5rem;display:block;margin-bottom:0.75rem;opacity:0.4;"></i>
+                    No prescriptions yet.<br><small>Click <strong>New Prescription</strong> to create one.</small>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ════════════════════════════
+     WALK-IN PATIENT MODAL
+════════════════════════════ -->
+<div class="modal fade" id="walkinModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius:14px;border:none;overflow:hidden;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:1.25rem 1.5rem;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2"></i>Register Walk-in Patient</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:1.5rem;">
+                <div id="walkinError" style="display:none;background:#fee2e2;color:#991b1b;padding:0.85rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:0.88rem;border-left:4px solid #ef4444;"></div>
+                <div id="walkinSuccess" style="display:none;"></div>
+                <div id="walkinForm">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Full Name *</label>
+                            <input type="text" class="form-control" id="wi_name" placeholder="Patient's full name">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Gender *</label>
+                            <select class="form-select" id="wi_gender">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Date of Birth</label>
+                            <input type="date" class="form-control" id="wi_dob">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Phone *</label>
+                            <input type="text" class="form-control" id="wi_phone" placeholder="10-digit number" maxlength="10">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Blood Group</label>
+                            <select class="form-select" id="wi_blood">
+                                <option value="Unknown">Unknown</option>
+                                <option value="A+">A+</option><option value="A-">A-</option>
+                                <option value="B+">B+</option><option value="B-">B-</option>
+                                <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                                <option value="O+">O+</option><option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Address</label>
+                            <input type="text" class="form-control" id="wi_address" placeholder="Patient's address (optional)">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Known Allergies</label>
+                            <input type="text" class="form-control" id="wi_allergies" placeholder="e.g. Penicillin, Aspirin (optional)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:2px solid #f1f5f9;padding:1rem 1.5rem;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="walkinSubmitBtn"
+                        onclick="submitWalkinPatient()"
+                        style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;padding:0.65rem 1.5rem;border-radius:8px;font-weight:700;cursor:pointer;">
+                    <i class="bi bi-person-check me-1"></i>Register Patient
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     CREATE PRESCRIPTION MODAL — AI ASSISTED
+════════════════════════════════════════════════════ -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:14px;overflow:hidden;border:none;">
+
+            <div class="modal-header" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:white;padding:1.25rem 1.5rem;border:none;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>New Prescription — AI Assisted</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body" style="padding:1.5rem;">
+
+                <div id="modalError" style="display:none;background:#fee2e2;color:#991b1b;padding:0.85rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:0.88rem;border-left:4px solid #ef4444;"></div>
+                <div id="modalSuccess" style="display:none;background:#d1fae5;color:#065f46;padding:0.85rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:0.88rem;border-left:4px solid #10b981;"></div>
+
+                <!-- Steps -->
+                <div class="steps-bar">
+                    <div class="step-item active" id="stepBar1">1️⃣ Patient & Symptoms</div>
+                    <div class="step-item" id="stepBar2">2️⃣ AI Prediction</div>
+                    <div class="step-item" id="stepBar3">3️⃣ Review & Store</div>
+                </div>
+
+                <form id="prescriptionForm" onsubmit="return false;">
+
+                    <!-- ══ STEP 1 ══ -->
+                    <div id="sectionStep1">
+
+                        <div class="section-heading"><i class="bi bi-search"></i> Find Patient by ID or Phone</div>
+
+                        <!-- ✅ NEW: Patient Lookup -->
+                        <div class="content-card" style="border:2px solid #bae6fd;background:#f0f9ff;padding:1rem;margin-bottom:1.25rem;">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold" style="font-size:0.85rem;">
+                                        Patient ID (P-XXXXX) or Phone Number *
+                                    </label>
+                                    <input type="text" class="form-control" id="patientLookupInput"
+                                           placeholder="e.g. P-A3X7K or 9876543210">
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" onclick="lookupPatient()"
+                                            style="width:100%;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:white;border:none;padding:0.65rem 1rem;border-radius:8px;font-weight:700;cursor:pointer;">
+                                        <i class="bi bi-search me-1"></i>Find Patient
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="font-size:0.78rem;color:#0369a1;margin-top:0.5rem;">
+                                💡 Or <a href="#" onclick="showWalkinModal();return false;" style="color:#0369a1;font-weight:600;">register a new walk-in patient</a> first
+                            </div>
+
+                            <!-- Patient Found Card -->
+                            <div id="patientFoundCard" style="display:none;margin-top:1rem;">
+                                <div class="patient-found-card">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                                        <div style="font-weight:700;color:#0f172a;font-size:0.95rem;" id="pf_name">—</div>
+                                        <span class="patient-badge" id="pf_id">—</span>
+                                    </div>
+                                    <div class="patient-detail-grid">
+                                        <div class="p-detail"><div class="p-detail-label">Age / Gender</div><div class="p-detail-value" id="pf_age_gender">—</div></div>
+                                        <div class="p-detail"><div class="p-detail-label">Blood Group</div><div class="p-detail-value" id="pf_blood">—</div></div>
+                                        <div class="p-detail"><div class="p-detail-label">Phone</div><div class="p-detail-value" id="pf_phone">—</div></div>
+                                        <div class="p-detail"><div class="p-detail-label">Previous Visits</div><div class="p-detail-value" id="pf_visits">—</div></div>
+                                        <div class="p-detail" id="pf_allergy_box" style="display:none;grid-column:1/-1;"><div class="p-detail-label">⚠️ Known Allergies</div><div class="p-detail-value" id="pf_allergies" style="color:#dc2626;">—</div></div>
+                                    </div>
+                                    <!-- Hidden inputs for form submission -->
+                                    <input type="hidden" id="patientAddress" value="">
+                                    <input type="hidden" id="patientType" value="">
+                                    <input type="hidden" id="patientIdHidden" value="">
+                                </div>
+                            </div>
+
+                            <div id="patientNotFound" style="display:none;background:#fee2e2;color:#991b1b;border-radius:8px;padding:0.75rem;margin-top:0.75rem;font-size:0.85rem;"></div>
+                        </div>
+
+                        <div class="section-heading"><i class="bi bi-activity"></i> Symptoms</div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold">
+                                Patient Symptoms *
+                                <span style="font-weight:400;color:#64748b;font-size:0.8rem;">— type and press <kbd>Enter</kbd> or <kbd>,</kbd></span>
+                            </label>
+                            <div class="symptom-input-box" id="symptomContainer" onclick="document.getElementById('symptomInput').focus()">
+                                <div id="symptomTags" style="display:contents;"></div>
+                                <input type="text" id="symptomInput" placeholder="Type symptom name here..."
+                                       style="border:none;outline:none;font-size:0.9rem;flex:1;min-width:160px;padding:0.2rem 0.3rem;background:transparent;">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div style="font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:0.4rem;">⚡ Quick add:</div>
+                            <span class="quick-tag" onclick="addSymptomTag('fever')">🌡️ fever</span>
+                            <span class="quick-tag" onclick="addSymptomTag('headache')">🤕 headache</span>
+                            <span class="quick-tag" onclick="addSymptomTag('chills')">🥶 chills</span>
+                            <span class="quick-tag" onclick="addSymptomTag('nausea')">🤢 nausea</span>
+                            <span class="quick-tag" onclick="addSymptomTag('vomiting')">vomiting</span>
+                            <span class="quick-tag" onclick="addSymptomTag('fatigue')">😴 fatigue</span>
+                            <span class="quick-tag" onclick="addSymptomTag('cough')">cough</span>
+                            <span class="quick-tag" onclick="addSymptomTag('dizziness')">dizziness</span>
+                            <span class="quick-tag" onclick="addSymptomTag('chest_pain')">chest pain</span>
+                            <span class="quick-tag" onclick="addSymptomTag('joint_pain')">joint pain</span>
+                            <span class="quick-tag" onclick="addSymptomTag('high_fever')">high fever</span>
+                            <span class="quick-tag" onclick="addSymptomTag('skin_rash')">skin rash</span>
+                            <span class="quick-tag" onclick="addSymptomTag('breathlessness')">breathlessness</span>
+                            <span class="quick-tag" onclick="addSymptomTag('back_pain')">back pain</span>
+                            <span class="quick-tag" onclick="addSymptomTag('stomach_pain')">stomach pain</span>
+                            <span class="quick-tag" onclick="addSymptomTag('loss_of_appetite')">loss of appetite</span>
+                            <span class="quick-tag" onclick="addSymptomTag('weight_loss')">weight loss</span>
+                            <span class="quick-tag" onclick="addSymptomTag('sweating')">sweating</span>
+                            <span class="quick-tag" onclick="addSymptomTag('dark_urine')">dark urine</span>
+                            <span class="quick-tag" onclick="addSymptomTag('yellowing_of_skin')">yellowing of skin</span>
+                            <span class="quick-tag" onclick="addSymptomTag('depression')">depression</span>
+                            <span class="quick-tag" onclick="addSymptomTag('anxiety')">anxiety</span>
+                        </div>
+
+                        <button type="button" id="aiPredictBtn" onclick="runAIPrediction()"
+                                style="width:100%;padding:0.9rem;background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.6rem;box-shadow:0 4px 15px rgba(99,102,241,0.4);">
+                            <i class="bi bi-robot" style="font-size:1.1rem;"></i>
+                            Get AI Suggestions
+                            <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- ══ STEP 2: AI Results ══ -->
+                    <div id="sectionStep2" style="display:none;">
+                        <div id="aiLoading" class="text-center py-5" style="display:none;">
+                            <div class="spinner-border" style="color:#6366f1;width:3rem;height:3rem;"></div>
+                            <div class="mt-3" style="color:#6366f1;font-weight:700;">🤖 AI analyzing symptoms...</div>
+                            <div style="color:#94a3b8;font-size:0.85rem;margin-top:0.5rem;">Running disease prediction, drug recommendation &amp; ADR analysis</div>
+                        </div>
+                        <div id="aiResults" style="display:none;">
+                            <div class="ai-prediction-box">
+                                <div class="ai-box-header">
+                                    <i class="bi bi-robot" style="font-size:1.2rem;color:#6366f1;"></i>
+                                    AI Clinical Decision Support
+                                    <span style="margin-left:auto;font-size:0.75rem;font-weight:400;color:#64748b;">Review carefully before accepting</span>
+                                </div>
+                                <div class="ai-result-row">
+                                    <div><div class="ai-result-label"><i class="bi bi-clipboard2-pulse me-1"></i>Predicted Disease</div><div class="ai-result-value" id="aiDiseaseName">—</div></div>
+                                    <span id="aiDiseaseConf" class="conf-badge conf-high">—</span>
+                                </div>
+                                <div class="ai-result-row">
+                                    <div><div class="ai-result-label"><i class="bi bi-capsule me-1"></i>Recommended Drug</div><div class="ai-result-value" id="aiDrugName">—</div></div>
+                                    <span id="aiDrugConf" class="conf-badge conf-high">—</span>
+                                </div>
+                                <div style="background:white;border-radius:8px;padding:0.85rem 1rem;border:1px solid #bae6fd;">
+                                    <div class="ai-result-label" style="margin-bottom:0.5rem;"><i class="bi bi-exclamation-triangle me-1"></i>Predicted ADRs</div>
+                                    <div id="aiADRList"></div>
+                                </div>
+                                <div id="symptomWarning" style="display:none;margin-top:0.75rem;background:#fef3c7;border-radius:8px;padding:0.75rem;font-size:0.82rem;color:#92400e;"></div>
+                            </div>
+                            <div class="d-flex gap-2 mt-3">
+                                <button type="button" class="btn btn-success flex-fill fw-bold" onclick="acceptAISuggestions()" style="padding:0.7rem;">
+                                    <i class="bi bi-check-circle me-1"></i>Accept AI Suggestions &amp; Review
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="goBack('step1')" style="padding:0.7rem 1rem;">
+                                    <i class="bi bi-arrow-left me-1"></i>Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══ STEP 3: Review &amp; Edit ══ -->
+                    <div id="sectionStep3" style="display:none;">
+
+                        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.85rem 1rem;margin-bottom:1.25rem;font-size:0.85rem;color:#166534;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>AI suggestions pre-filled below.</strong> Review and edit any field before storing on blockchain.
+                        </div>
+
+                        <div class="section-heading"><i class="bi bi-clipboard2-pulse"></i> Diagnosis</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Diagnosis / Disease *</label>
+                                <input type="text" class="form-control" id="disease" placeholder="e.g., Malaria">
+                                <div class="ai-hint" id="diseaseHint"></div>
+                            </div>
+                        </div>
+
+                        <div class="section-heading mt-2"><i class="bi bi-capsule"></i> Medication</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Medicine Name *</label>
+                                <input type="text" class="form-control" id="medicineName" placeholder="e.g., Chloroquine">
+                                <div class="ai-hint" id="drugHint"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Dosage *</label>
+                                <input type="text" class="form-control" id="dosage" placeholder="e.g., 500mg">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Frequency *</label>
+                                <select class="form-select" id="frequency">
+                                    <option value="">Select frequency</option>
+                                    <option>Once daily</option>
+                                    <option>Twice daily</option>
+                                    <option>Three times daily</option>
+                                    <option>Every 6 hours</option>
+                                    <option>As needed (PRN)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Duration *</label>
+                                <input type="text" class="form-control" id="duration" placeholder="e.g., 7 days">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Instructions *</label>
+                                <textarea class="form-control" id="instructions" rows="2" placeholder="e.g., Take after meals with water"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Side Effects / ADR Warnings <span style="font-weight:400;color:#f59e0b;font-size:0.78rem;">⚠️ Pre-filled from AI</span></label>
+                                <textarea class="form-control" id="sideEffects" rows="2" placeholder="Known side effects or AI predicted ADRs"></textarea>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="goBack('step2')">
+                            <i class="bi bi-arrow-left me-1"></i>Back to AI Results
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer" style="border-top:2px solid #f1f5f9;padding:1rem 1.5rem;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-primary-custom" id="submitBtn" onclick="submitPrescription()" style="display:none;padding:0.7rem 1.5rem;">
+                    <i class="bi bi-shield-check"></i>Store on Blockchain
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════ -->
+<script>
+// ── State ────────────────────────────────────────────
+let prescriptionModal = null;
+let walkinModal       = null;
+let isSubmitting      = false;
+let selectedSymptoms  = [];
+let aiData            = null;
+let currentPatient    = null;   // ✅ holds found patient data
+
+// ── CSRF ────────────────────────────────────────────
+function getCsrfToken() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+}
+
+// ── Walk-in Modal ────────────────────────────────────
+function showWalkinModal() {
+    walkinModal = new bootstrap.Modal(document.getElementById('walkinModal'));
+    walkinModal.show();
+}
+
+async function submitWalkinPatient() {
+    const name     = document.getElementById('wi_name').value.trim();
+    const phone    = document.getElementById('wi_phone').value.trim();
+    const gender   = document.getElementById('wi_gender').value;
+    const dob      = document.getElementById('wi_dob').value;
+    const blood    = document.getElementById('wi_blood').value;
+    const address  = document.getElementById('wi_address').value.trim();
+    const allergies= document.getElementById('wi_allergies').value.trim();
+
+    if (!name)  { document.getElementById('walkinError').textContent='Full name is required'; document.getElementById('walkinError').style.display='block'; return; }
+    if (!phone) { document.getElementById('walkinError').textContent='Phone number is required'; document.getElementById('walkinError').style.display='block'; return; }
+    if (phone.length !== 10 || !/^[1-9]/.test(phone)) {
+        document.getElementById('walkinError').textContent='Phone must be 10 digits, not starting with 0';
+        document.getElementById('walkinError').style.display='block'; return;
+    }
+
+    const btn = document.getElementById('walkinSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Registering...';
+
+    try {
+        const res = await fetch("{% url 'register_walkin_patient' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ full_name:name, phone:phone, gender:gender, date_of_birth:dob||'', blood_group:blood, address:address, allergies:allergies })
+        });
+        const data = await res.json();
+
+        document.getElementById('walkinError').style.display = 'none';
+
+        if (data.success) {
+            document.getElementById('walkinForm').style.display = 'none';
+            document.getElementById('walkinSuccess').innerHTML = `
+                <div style="text-align:center;padding:1.5rem;">
+                    <div style="width:64px;height:64px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:2rem;">✅</div>
+                    <h5 style="color:#065f46;font-weight:700;">Patient Registered!</h5>
+                    <div style="background:#f0fdf4;border:2px solid #10b981;border-radius:12px;padding:1rem;margin-top:1rem;">
+                        <div style="font-size:0.8rem;color:#64748b;">Patient ID</div>
+                        <div style="font-size:1.8rem;font-weight:800;color:#059669;font-family:monospace;">${data.patient_id}</div>
+                        <div style="font-size:0.9rem;color:#374151;margin-top:0.5rem;">${data.full_name}</div>
+                        <div style="font-size:0.82rem;color:#64748b;">${data.gender} &bull; ${data.dob} &bull; Blood: ${data.blood_group}</div>
+                    </div>
+                    <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">📋 Note this ID — use it to create prescriptions.</p>
+                    <button onclick="usePatientForPrescription('${data.patient_id}', '${data.full_name}', '${data.wallet}')"
+                            style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:white;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:700;cursor:pointer;margin-top:0.5rem;">
+                        <i class="bi bi-file-earmark-plus me-1"></i>Create Prescription for this Patient
+                    </button>
+                </div>
+            `;
+            document.getElementById('walkinSuccess').style.display = 'block';
+        } else {
+            document.getElementById('walkinError').textContent = data.error || 'Registration failed';
+            document.getElementById('walkinError').style.display = 'block';
+        }
+    } catch(err) {
+        document.getElementById('walkinError').textContent = 'Network error: ' + err.message;
+        document.getElementById('walkinError').style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-person-check me-1"></i>Register Patient';
+    }
+}
+
+function usePatientForPrescription(patientId, name, wallet) {
+    if (walkinModal) walkinModal.hide();
+    setTimeout(() => {
+        showCreateModal();
+        // Pre-fill the lookup field
+        document.getElementById('patientLookupInput').value = patientId;
+        lookupPatient();
+    }, 400);
+}
+
+// ── Patient Lookup ────────────────────────────────────
+async function lookupPatient() {
+    const query = document.getElementById('patientLookupInput').value.trim();
+    if (!query) { showLookupError('Enter a Patient ID or phone number'); return; }
+
+    document.getElementById('patientFoundCard').style.display = 'none';
+    document.getElementById('patientNotFound').style.display = 'none';
+
+    try {
+        const res  = await fetch(`{% url 'lookup_patient' %}?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if (data.success) {
+            currentPatient = data;
+
+            document.getElementById('pf_name').textContent       = data.full_name;
+            document.getElementById('pf_id').textContent         = data.patient_id;
+            document.getElementById('pf_age_gender').textContent = `${data.age || '?'} yrs / ${data.gender}`;
+            document.getElementById('pf_blood').textContent      = data.blood_group;
+            document.getElementById('pf_phone').textContent      = data.phone;
+            document.getElementById('pf_visits').textContent     = `${data.rx_count} prescription(s) — ${data.last_visit}`;
+
+            // Set wallet and type for form submission
+            document.getElementById('patientAddress').value  = data.wallet;
+            document.getElementById('patientType').value     = data.type;
+            document.getElementById('patientIdHidden').value = data.patient_id;
+
+            // Show allergies warning if any
+            if (data.allergies) {
+                document.getElementById('pf_allergies').textContent = data.allergies;
+                document.getElementById('pf_allergy_box').style.display = 'block';
+            } else {
+                document.getElementById('pf_allergy_box').style.display = 'none';
+            }
+
+            document.getElementById('patientFoundCard').style.display = 'block';
+        } else {
+            showLookupError(data.error + '<br><small>Try <a href="#" onclick="showWalkinModal();return false;">registering as a new walk-in patient</a></small>');
+        }
+    } catch(err) {
+        showLookupError('Network error: ' + err.message);
+    }
+}
+
+function showLookupError(msg) {
+    const el = document.getElementById('patientNotFound');
+    el.innerHTML = '❌ ' + msg;
+    el.style.display = 'block';
+}
+
+// ── Create Modal ─────────────────────────────────────
+function showCreateModal() {
+    resetModal();
+    prescriptionModal = new bootstrap.Modal(document.getElementById('createModal'));
+    prescriptionModal.show();
+}
+
+function resetModal() {
+    isSubmitting     = false;
+    selectedSymptoms = [];
+    aiData           = null;
+    currentPatient   = null;
+
+    document.getElementById('symptomTags').innerHTML   = '';
+    document.getElementById('symptomInput').value      = '';
+    document.getElementById('prescriptionForm').reset();
+    document.getElementById('modalError').style.display   = 'none';
+    document.getElementById('modalSuccess').style.display = 'none';
+    document.getElementById('submitBtn').style.display    = 'none';
+    document.getElementById('patientFoundCard').style.display = 'none';
+    document.getElementById('patientNotFound').style.display  = 'none';
+    document.querySelectorAll('.quick-tag').forEach(t => t.classList.remove('used'));
+    showStep('step1');
+}
+
+// ── Steps ────────────────────────────────────────────
+function showStep(step) {
+    const steps = ['step1','step2','step3'];
+    const idx   = steps.indexOf(step);
+    document.getElementById('sectionStep1').style.display = step==='step1' ? 'block' : 'none';
+    document.getElementById('sectionStep2').style.display = step==='step2' ? 'block' : 'none';
+    document.getElementById('sectionStep3').style.display = step==='step3' ? 'block' : 'none';
+    steps.forEach((s,i) => {
+        const bar = document.getElementById('stepBar'+(i+1));
+        bar.className = 'step-item';
+        if (i < idx)      bar.className = 'step-item done';
+        else if (i===idx) bar.className = 'step-item active';
+    });
+    document.getElementById('submitBtn').style.display = step==='step3' ? 'inline-flex' : 'none';
+}
+function goBack(s) { showStep(s); }
+
+// ── Symptom Tags ──────────────────────────────────────
+function addSymptomTag(raw) {
+    const sym = raw.trim().toLowerCase().replace(/\s+/g,'_').replace(/,/g,'');
+    if (!sym || selectedSymptoms.includes(sym)) return;
+    selectedSymptoms.push(sym);
+    renderTags();
+    document.querySelectorAll('.quick-tag').forEach(t => {
+        if (t.getAttribute('onclick')?.includes(`'${sym}'`)) t.classList.add('used');
+    });
+}
+function removeSymptomTag(sym) {
+    selectedSymptoms = selectedSymptoms.filter(s => s !== sym);
+    renderTags();
+    document.querySelectorAll('.quick-tag').forEach(t => {
+        if (t.getAttribute('onclick')?.includes(`'${sym}'`)) t.classList.remove('used');
+    });
+}
+function renderTags() {
+    document.getElementById('symptomTags').innerHTML = selectedSymptoms.map(s => `
+        <span class="symptom-chip">${s.replace(/_/g,' ')}
+            <span class="symptom-chip-remove" onclick="removeSymptomTag('${s}')">&times;</span>
+        </span>`).join('');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('symptomInput');
+    if (!input) return;
+    input.addEventListener('keydown', function(e) {
+        if (e.key==='Enter' || e.key===',') {
+            e.preventDefault();
+            const v = this.value.trim().replace(/,/g,'');
+            if (v) { addSymptomTag(v); this.value=''; }
+        }
+        if (e.key==='Backspace' && !this.value && selectedSymptoms.length>0)
+            removeSymptomTag(selectedSymptoms[selectedSymptoms.length-1]);
+    });
+    // Patient lookup on Enter key
+    const lookupInput = document.getElementById('patientLookupInput');
+    if (lookupInput) {
+        lookupInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); lookupPatient(); }
+        });
+    }
+});
+
+// ── AI Prediction ─────────────────────────────────────
+async function runAIPrediction() {
+    const input = document.getElementById('symptomInput');
+    if (input.value.trim()) { addSymptomTag(input.value.trim()); input.value=''; }
+
+    if (selectedSymptoms.length===0) { showError('Add at least one symptom.'); return; }
+    if (!currentPatient) { showError('Find a patient first using their ID or phone number.'); return; }
+    if (!currentPatient.wallet) { showError('This patient has no wallet address assigned. Contact admin.'); return; }
+
+    showStep('step2');
+    document.getElementById('aiLoading').style.display  = 'flex';
+    document.getElementById('aiLoading').style.flexDirection = 'column';
+    document.getElementById('aiLoading').style.alignItems = 'center';
+    document.getElementById('aiResults').style.display  = 'none';
+
+    try {
+        const res  = await fetch('/api/ai/predict/', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'X-CSRFToken':getCsrfToken() },
+            body: JSON.stringify({ symptoms: selectedSymptoms })
+        });
+        const data = await res.json();
+        document.getElementById('aiLoading').style.display = 'none';
+
+        if (!data.success) { showError('AI Error: '+(data.error||'Unknown')); showStep('step1'); return; }
+
+        aiData = data;
+        renderAIResults(data);
+        document.getElementById('aiResults').style.display = 'block';
+    } catch(err) {
+        document.getElementById('aiLoading').style.display = 'none';
+        showError('AI service error: ' + err.message);
+        showStep('step1');
+    }
+}
+
+function renderAIResults(data) {
+    document.getElementById('aiDiseaseName').textContent = data.disease.name;
+    const dc = document.getElementById('aiDiseaseConf');
+    dc.textContent = data.disease.confidence;
+    dc.className   = 'conf-badge ' + tierClass(data.disease.tier);
+
+    document.getElementById('aiDrugName').textContent = data.drug.name;
+    document.getElementById('aiDrugConf').textContent = data.drug.confidence;
+
+    const adrEl = document.getElementById('aiADRList');
+    if (data.adrs && data.adrs.length>0) {
+        adrEl.innerHTML = data.adrs.map(a => {
+            const cls = a.severity==='SEVERE'?'adr-severe':a.severity==='MODERATE'?'adr-moderate':'adr-mild';
+            return `<span class="adr-pill ${cls}">${a.name} · ${a.probability} [${a.severity}]</span>`;
+        }).join('');
+    } else {
+        adrEl.innerHTML = '<span style="color:#10b981;font-size:0.85rem;">✅ No significant ADRs predicted</span>';
+    }
+
+    const missed = data.symptoms_missed || [];
+    const warn   = document.getElementById('symptomWarning');
+    if (missed.length>0) {
+        warn.innerHTML = `⚠️ Unrecognized symptoms: <strong>${missed.join(', ')}</strong>`;
+        warn.style.display = 'block';
+    } else {
+        warn.style.display = 'none';
+    }
+}
+
+function tierClass(tier) {
+    return tier==='HIGH' ? 'conf-high' : tier==='MEDIUM' ? 'conf-medium' : 'conf-low';
+}
+
+function acceptAISuggestions() {
+    if (!aiData) return;
+    document.getElementById('disease').value      = aiData.disease.name;
+    document.getElementById('medicineName').value = aiData.drug.name;
+    document.getElementById('diseaseHint').textContent =
+        `🤖 AI predicted: ${aiData.disease.confidence} (${aiData.disease.tier}) — edit if you disagree`;
+    document.getElementById('drugHint').textContent =
+        `🤖 AI recommended: ${aiData.drug.confidence} — edit if needed`;
+    if (aiData.adrs && aiData.adrs.length>0) {
+        document.getElementById('sideEffects').value =
+            aiData.adrs.map(a => `${a.name} (${a.severity})`).join(', ');
+    }
+    showStep('step3');
+}
+
+// ── Submit ────────────────────────────────────────────
+function showError(msg) {
+    const el = document.getElementById('modalError');
+    el.innerHTML = '❌ ' + msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    setTimeout(() => el.style.display='none', 7000);
+}
+
+function generateRxId() {
+    const ts  = Date.now().toString(36).toUpperCase();
+    const rnd = Math.random().toString(36).substring(2,8).toUpperCase();
+    return 'RX-' + ts + '-' + rnd;
+}
+
+async function submitPrescription() {
+    if (isSubmitting) return;
+
+    const disease = document.getElementById('disease').value.trim();
+    const drug    = document.getElementById('medicineName').value.trim();
+    const dosage  = document.getElementById('dosage').value.trim();
+    const freq    = document.getElementById('frequency').value.trim();
+    const dur     = document.getElementById('duration').value.trim();
+    const instr   = document.getElementById('instructions').value.trim();
+    const addr    = document.getElementById('patientAddress').value.trim();
+
+    if (!disease) { showError('Disease / Diagnosis is required.'); return; }
+    if (!drug)    { showError('Medicine Name is required.'); return; }
+    if (!dosage)  { showError('Dosage is required.'); return; }
+    if (!freq)    { showError('Please select Frequency.'); return; }
+    if (!dur)     { showError('Duration is required.'); return; }
+    if (!instr)   { showError('Instructions are required.'); return; }
+    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+        showError('No valid patient wallet found. Check patient registration or contact admin.');
+        return;
+    }
+
+    isSubmitting = true;
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled  = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Storing on Blockchain...';
+
+    const payload = {
+        prescription_id: generateRxId(),
+        patient_address: addr,
+        disease:         disease,
+        drug:            drug,
+        dosage:          dosage,
+        frequency:       freq,
+        duration:        dur,
+        instructions:    instr,
+        adverse_effects: document.getElementById('sideEffects').value.trim() || 'None noted',
+        // ✅ Pass walk-in patient ID if applicable
+        walkin_patient_id: document.getElementById('patientType').value === 'walkin'
+                           ? document.getElementById('patientIdHidden').value : null,
+    };
+
+    try {
+        const res    = await fetch('/api/blockchain/store-prescription/', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'X-CSRFToken':getCsrfToken() },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.success) {
+            const successDiv = document.getElementById('modalSuccess');
+            successDiv.innerHTML =
+                '✅ <strong>Prescription stored on Blockchain!</strong><br>' +
+                '🔑 ID: <code>' + result.prescription_id + '</code><br>' +
+                '📦 TX: <code style="font-size:0.8rem;">' +
+                (result.transaction_hash ? result.transaction_hash.substring(0,30)+'...' : 'N/A') + '</code>';
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                if (prescriptionModal) prescriptionModal.hide();
+                location.reload();
+            }, 3000);
+        } else {
+            showError(result.error || 'Blockchain storage failed.');
+            isSubmitting = false;
+        }
+    } catch(err) {
+        showError('Network error: ' + err.message);
+        isSubmitting = false;
+    } finally {
+        submitBtn.disabled  = false;
+        submitBtn.innerHTML = '<i class="bi bi-shield-check"></i> Store on Blockchain';
+    }
+}
+</script>
+{% endblock %}

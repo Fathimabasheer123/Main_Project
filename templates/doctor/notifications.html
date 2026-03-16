@@ -1,0 +1,176 @@
+<!-- templates/doctor/notifications.html -->
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Notifications - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f7fa;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .container-wrapper {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .notifications-list {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+
+    .notification-item {
+        padding: 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        gap: 1rem;
+        transition: background 0.2s;
+    }
+
+    .notification-item:hover {
+        background: #f8fafc;
+    }
+
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+
+    .notification-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .notification-icon i {
+        font-size: 1.5rem;
+        color: #10b981;
+    }
+
+    .notification-content {
+        flex: 1;
+    }
+
+    .notification-title {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+
+    .notification-text {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .notification-time {
+        font-size: 0.85rem;
+        color: #94a3b8;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        color: #cbd5e1;
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-state h3 {
+        color: #64748b;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        margin-top: 2rem;
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="bi bi-bell-fill"></i> Notifications
+        </h1>
+        <p class="page-subtitle">Recent prescription updates and activity</p>
+    </div>
+
+    <div class="notifications-list">
+        {% if recent_fills %}
+            {% for rx in recent_fills %}
+                <div class="notification-item">
+                    <div class="notification-icon">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">
+                            Prescription Dispensed
+                        </div>
+                        <div class="notification-text">
+                            Prescription {{ rx.prescription_id }} has been dispensed
+                            {% if rx.patient %}
+                                for {{ rx.patient.user.get_full_name }}
+                            {% endif %}
+                        </div>
+                        <div class="notification-time">
+                            <i class="bi bi-clock"></i> {{ rx.filled_at|timesince }} ago
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-bell-slash"></i>
+                <h3>No Notifications</h3>
+                <p>You'll see updates here when prescriptions are dispensed</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

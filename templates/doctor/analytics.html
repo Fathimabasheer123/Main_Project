@@ -1,0 +1,273 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Analytics - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap {
+        max-width: 900px;
+        padding: 1.5rem;
+    }
+
+    .page-header {
+        background: white;
+        padding: 1.2rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .page-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.2rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-bottom: 0.2rem;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .icon-blue   { background: #dbeafe; color: #0ea5e9; }
+    .icon-green  { background: #d1fae5; color: #10b981; }
+    .icon-orange { background: #fed7aa; color: #f59e0b; }
+    .icon-purple { background: #e9d5ff; color: #a855f7; }
+
+    .content-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1.2rem;
+    }
+
+    .progress-row {
+        margin-bottom: 1rem;
+    }
+
+    .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-bottom: 0.4rem;
+    }
+
+    .progress-bar-bg {
+        background: #f1f5f9;
+        border-radius: 999px;
+        height: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar-fill {
+        height: 10px;
+        border-radius: 999px;
+        transition: width 0.6s ease;
+    }
+
+    .progress-green {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .progress-orange {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+
+    .btn-back:hover {
+        opacity: 0.9;
+        color: white;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 2rem;
+        color: #94a3b8;
+    }
+
+    .no-data i {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="page-wrap">
+
+    <div class="page-header">
+        <div class="page-title">
+            <i class="bi bi-graph-up-arrow"></i> Analytics
+        </div>
+        <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Total</div>
+                <div class="stat-value">{{ total_prescriptions|default:"0" }}</div>
+            </div>
+            <div class="stat-icon icon-blue">
+                <i class="bi bi-file-earmark-medical-fill"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Filled</div>
+                <div class="stat-value">{{ filled_prescriptions|default:"0" }}</div>
+            </div>
+            <div class="stat-icon icon-green">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Pending</div>
+                <div class="stat-value">{{ pending_prescriptions|default:"0" }}</div>
+            </div>
+            <div class="stat-icon icon-orange">
+                <i class="bi bi-hourglass-split"></i>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Success Rate</div>
+                <div class="stat-value">{{ success_rate|default:"0" }}%</div>
+            </div>
+            <div class="stat-icon icon-purple">
+                <i class="bi bi-trophy-fill"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Section -->
+    <div class="content-card">
+        <div class="card-title">
+            <i class="bi bi-bar-chart-fill"></i> Prescription Breakdown
+        </div>
+
+        {% if total_prescriptions and total_prescriptions > 0 %}
+
+        <div class="progress-row">
+            <div class="progress-label">
+                <span><i class="bi bi-check-circle-fill text-success"></i> Filled</span>
+                <span>{{ filled_prescriptions|default:"0" }}</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill progress-green"
+                     style="width: {{ success_rate|default:0 }}%;">
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-row">
+            <div class="progress-label">
+                <span><i class="bi bi-hourglass-split text-warning"></i> Pending</span>
+                <span>{{ pending_prescriptions|default:"0" }}</span>
+            </div>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill progress-orange"
+                     style="width: {{ pending_rate|default:0 }}%;">
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="no-data">
+            <i class="bi bi-bar-chart"></i>
+            <p>No data yet. Create prescriptions to see analytics.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Patients -->
+    <div class="content-card">
+        <div class="card-title">
+            <i class="bi bi-people-fill"></i> Patients
+        </div>
+
+        <div class="stats-grid" style="margin-bottom:0;">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Patients</div>
+                    <div class="stat-value">{{ total_patients|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-blue">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

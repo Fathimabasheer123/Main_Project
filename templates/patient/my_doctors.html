@@ -1,0 +1,227 @@
+<!-- templates/patient/my_doctors.html -->
+{% extends 'base_dashboard.html' %}
+
+{% block title %}My Doctors - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f5f7fa;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .container-wrapper {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .page-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .doctors-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .doctor-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s;
+        border: 1px solid #e2e8f0;
+    }
+
+    .doctor-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    .doctor-header {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .doctor-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .doctor-info {
+        flex: 1;
+    }
+
+    .doctor-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .doctor-specialty {
+        color: #10b981;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .doctor-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .stat-box {
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #10b981;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+
+    .doctor-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        margin-top: 2rem;
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        color: #cbd5e1;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-wrapper">
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="bi bi-person-badge"></i> My Doctors
+        </h1>
+        <p class="page-subtitle">Healthcare professionals who have prescribed to you</p>
+    </div>
+
+    {% if doctors %}
+        <div class="doctors-grid">
+            {% for doctor_data in doctors %}
+                <div class="doctor-card">
+                    <div class="doctor-header">
+                        <div class="doctor-avatar">
+                            {{ doctor_data.doctor.user.first_name.0 }}{{ doctor_data.doctor.user.last_name.0 }}
+                        </div>
+                        <div class="doctor-info">
+                            <h3 class="doctor-name">
+                                Dr. {{ doctor_data.doctor.user.get_full_name }}
+                            </h3>
+                            <div class="doctor-specialty">
+                                <i class="bi bi-award"></i> {{ doctor_data.doctor.specialization }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doctor-stats">
+                        <div class="stat-box">
+                            <div class="stat-value">{{ doctor_data.prescription_count }}</div>
+                            <div class="stat-label">Prescription{{ doctor_data.prescription_count|pluralize }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">{{ doctor_data.last_visit|date:"M Y" }}</div>
+                            <div class="stat-label">Last Visit</div>
+                        </div>
+                    </div>
+
+                    <div class="doctor-meta">
+                        <i class="bi bi-hospital"></i>
+                        <span>
+                            {% if doctor_data.doctor.hospital %}
+                                {{ doctor_data.doctor.hospital }}
+                            {% else %}
+                                Hospital not specified
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-person-x"></i>
+            <h3>No Doctors Yet</h3>
+            <p>Doctors who prescribe to you will appear here</p>
+        </div>
+    {% endif %}
+
+    <a href="{% url 'patient_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

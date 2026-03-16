@@ -1,13 +1,26 @@
+# config/urls.py
 from django.contrib import admin
 from django.urls import path, include
-from apps.prescriptions import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', views.index, name='home'),
-    path('doctor/', views.doctor_dashboard, name='doctor'),
-    path('patient/', views.patient_portal, name='patient'),
-    path('pharmacy/', views.pharmacy_interface, name='pharmacy'),
     path('admin/', admin.site.urls),
+
+    # All blockchain API endpoints
     path('api/blockchain/', include('apps.blockchain.urls')),
-    path('api/prescriptions/', include('apps.prescriptions.urls')),
+
+    # All page views — auth, dashboards, prescriptions
+    path('', include('apps.prescriptions.urls')),
+    path('api/ai/', include('apps.ai_engine.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )
+    urlpatterns += static(
+        settings.STATIC_URL,
+        document_root=settings.STATIC_ROOT
+    )

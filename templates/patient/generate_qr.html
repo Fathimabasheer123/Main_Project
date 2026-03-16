@@ -1,0 +1,176 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Prescription QR - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 600px; margin: 0 auto; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .qr-card {
+        background: white; padding: 2rem; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center;
+    }
+    .qr-box {
+        display: inline-block; padding: 1.5rem;
+        background: white; border-radius: 16px;
+        border: 3px solid #10b981;
+        box-shadow: 0 4px 20px rgba(16,185,129,0.15);
+        margin: 1rem 0;
+    }
+    .qr-box img { display: block; width: 220px; height: 220px; image-rendering: pixelated; }
+    .qr-label { font-size: 0.78rem; color: #64748b; margin-top: 0.5rem; font-weight: 500; }
+    .info-block {
+        background: #f0fdf4; border: 1px solid #a7f3d0;
+        border-radius: 10px; padding: 1rem 1.25rem;
+        margin: 1.25rem 0; text-align: left;
+    }
+    .info-row {
+        display: flex; justify-content: space-between;
+        padding: 0.5rem 0; border-bottom: 1px solid #d1fae5; font-size: 0.88rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #64748b; font-weight: 500; }
+    .info-value { color: #0f172a; font-weight: 700; text-align: right; }
+    .rx-id-display {
+        font-family: 'Courier New', monospace; font-size: 1rem;
+        color: #059669; font-weight: 700; background: #f0fdf4;
+        border: 1px solid #bbf7d0; border-radius: 8px;
+        padding: 0.5rem 1rem; display: inline-block; margin: 0.5rem 0;
+    }
+    .badge-dispensed { background: #d1fae5; color: #065f46; padding: 0.3rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+    .badge-pending   { background: #fef3c7; color: #92400e; padding: 0.3rem 0.9rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+    .btn-group-custom { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.25rem; flex-wrap: wrap; }
+    .btn-green {
+        padding: 0.65rem 1.4rem; background: linear-gradient(135deg, #10b981, #059669);
+        color: white; border: none; border-radius: 8px; font-weight: 700;
+        cursor: pointer; font-size: 0.9rem; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 0.4rem;
+    }
+    .btn-green:hover { opacity: 0.9; color: white; }
+    .btn-outline {
+        padding: 0.65rem 1.4rem; background: white; color: #10b981;
+        border: 2px solid #10b981; border-radius: 8px; font-weight: 700;
+        cursor: pointer; font-size: 0.9rem; display: inline-flex;
+        align-items: center; gap: 0.4rem; text-decoration: none;
+    }
+    .btn-outline:hover { background: #10b981; color: white; }
+    .instruction-box {
+        background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+        padding: 0.75rem 1rem; font-size: 0.82rem; color: #1e40af; margin-top: 1rem; text-align: left;
+    }
+    @media print {
+        .page-header, .btn-group-custom, .instruction-box { display: none !important; }
+        .page-wrap { padding: 0; max-width: 100%; }
+        .qr-card { box-shadow: none; border: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="page-header">
+        <div class="page-title">
+            <i class="bi bi-qr-code-scan me-2" style="color:#10b981;"></i>Prescription QR Code
+        </div>
+        <a href="{% url 'prescription_history_patient' %}" class="btn-green">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <div class="qr-card">
+        <p style="color:#64748b;font-size:0.88rem;margin-bottom:0.5rem;">
+            Show this QR code at the pharmacy to dispense your prescription.
+        </p>
+
+        <div class="rx-id-display">{{ prescription.prescription_id }}</div>
+
+        <div style="margin:0.5rem 0;">
+            {% if prescription.is_filled %}
+                <span class="badge-dispensed">✅ Dispensed</span>
+            {% elif prescription.is_cancelled %}
+                <span style="background:#fee2e2;color:#991b1b;padding:0.3rem 0.9rem;border-radius:20px;font-size:0.8rem;font-weight:700;">❌ Cancelled</span>
+            {% else %}
+                <span class="badge-pending">⏳ Pending Dispensing</span>
+            {% endif %}
+        </div>
+
+        <!-- ✅ SERVER-SIDE QR — no JS library needed, just pip install qrcode[pil] -->
+        <div class="qr-box">
+            <img src="{% url 'qr_code_image' prescription.prescription_id %}"
+                 alt="QR Code"
+                 width="220" height="220">
+        </div>
+
+        <div class="qr-label">
+            <i class="bi bi-info-circle me-1"></i>Scan with pharmacy scanner or show Prescription ID
+        </div>
+
+        <div class="info-block">
+            <div class="info-row">
+                <span class="info-label">Doctor</span>
+                <span class="info-value">{% if prescription.doctor %}Dr. {{ prescription.doctor.user.get_full_name }}{% else %}N/A{% endif %}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Diagnosis</span>
+                <span class="info-value">{{ prescription.disease }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Medicine</span>
+                <span class="info-value">{{ prescription.drug|truncatewords:4 }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Issued</span>
+                <span class="info-value">{{ prescription.created_at|date:"d M Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Expires</span>
+                <span class="info-value">{{ prescription.expiry_date|date:"d M Y" }}</span>
+            </div>
+            {% if prescription.transaction_hash %}
+            <div class="info-row">
+                <span class="info-label">Blockchain TX</span>
+                <span class="info-value" style="font-family:monospace;font-size:0.75rem;color:#6366f1;">
+                    {{ prescription.transaction_hash|slice:":20" }}...
+                </span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="instruction-box">
+            <strong><i class="bi bi-lightbulb me-1"></i>How to use:</strong><br>
+            1. Show this QR code to the pharmacist<br>
+            2. They scan it to verify on the blockchain<br>
+            3. Once dispensed, the prescription cannot be used again
+        </div>
+
+        <div class="btn-group-custom">
+            <a href="{% url 'download_prescription_pdf' prescription.prescription_id %}" class="btn-green">
+                <i class="bi bi-download"></i> Download PDF
+            </a>
+            <button onclick="window.print()" class="btn-outline">
+                <i class="bi bi-printer"></i> Print
+            </button>
+            <button onclick="shareQR()" class="btn-outline">
+                <i class="bi bi-share"></i> Share
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function shareQR() {
+    const rxId = '{{ prescription.prescription_id }}';
+    if (navigator.share) {
+        try { await navigator.share({ title: 'MedChain Prescription', text: `Prescription ID: ${rxId}`, url: window.location.href }); }
+        catch(e) { copyToClipboard(rxId); }
+    } else { copyToClipboard(rxId); }
+}
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => { alert('Copied: ' + text); }).catch(() => { alert('ID: ' + text); });
+}
+</script>
+{% endblock %}

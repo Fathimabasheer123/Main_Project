@@ -1,0 +1,169 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Daily Report - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 900px; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        background: white; padding: 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .stat-label { font-size: 0.8rem; color: #64748b; margin-bottom: 0.2rem; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #1e293b; }
+    .stat-icon {
+        width: 48px; height: 48px; border-radius: 10px;
+        display: flex; align-items: center;
+        justify-content: center; font-size: 1.4rem; flex-shrink: 0;
+    }
+    .icon-amber  { background: #fef3c7; color: #f59e0b; }
+    .icon-green  { background: #d1fae5; color: #10b981; }
+    .icon-blue   { background: #dbeafe; color: #0ea5e9; }
+    .content-card {
+        background: white; padding: 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0; margin-bottom: 1rem;
+    }
+    .card-title {
+        font-size: 1rem; font-weight: 600;
+        color: #1e293b; margin-bottom: 1rem;
+    }
+    .report-date {
+        font-size: 0.85rem; color: #64748b;
+        margin-bottom: 1.2rem;
+        padding: 0.6rem 1rem; background: #f8fafc;
+        border-radius: 8px; display: inline-block;
+    }
+    .summary-row {
+        display: flex; justify-content: space-between;
+        align-items: center; padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f5f9; font-size: 0.9rem;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-label { color: #64748b; }
+    .summary-value { font-weight: 600; color: #1e293b; }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white; text-decoration: none; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem; margin-top: 0.5rem;
+    }
+    .btn-back:hover { opacity: 0.9; color: white; }
+    .btn-print {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem; background: white;
+        color: #f59e0b; border: 2px solid #f59e0b;
+        border-radius: 8px; font-weight: 600;
+        font-size: 0.9rem; cursor: pointer;
+    }
+    .btn-print:hover { background: #f59e0b; color: white; }
+    .btn-group { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+    @media print {
+        .btn-group, .page-header a { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+    <div class="page-header">
+        <div class="page-title">
+            <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
+        </div>
+        <a href="{% url 'pharmacy_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-3"
+             style="border-radius:8px;">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Date -->
+    <div class="report-date">
+        <i class="bi bi-calendar3"></i>
+        Report generated: {% now "F d, Y - H:i" %}
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">Today</div>
+                <div class="stat-value">{{ today_count|default:"0" }}</div>
+            </div>
+            <div class="stat-icon icon-amber">
+                <i class="bi bi-sun-fill"></i>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">This Week</div>
+                <div class="stat-value">{{ week_count|default:"0" }}</div>
+            </div>
+            <div class="stat-icon icon-green">
+                <i class="bi bi-calendar-week-fill"></i>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div>
+                <div class="stat-label">This Month</div>
+                <div class="stat-value">{{ month_count|default:"0" }}</div>
+            </div>
+            <div class="stat-icon icon-blue">
+                <i class="bi bi-calendar-month-fill"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="content-card">
+        <div class="card-title">
+            <i class="bi bi-clipboard-data"></i> Summary
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">Prescriptions dispensed today</span>
+            <span class="summary-value">{{ today_count|default:"0" }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">Prescriptions this week</span>
+            <span class="summary-value">{{ week_count|default:"0" }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">Prescriptions this month</span>
+            <span class="summary-value">{{ month_count|default:"0" }}</span>
+        </div>
+        <div class="summary-row">
+            <span class="summary-label">All time total</span>
+            <span class="summary-value">{{ total_filled|default:"0" }}</span>
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="window.print()" class="btn-print">
+            <i class="bi bi-printer"></i> Print Report
+        </button>
+        <a href="{% url 'pharmacy_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+</div>
+{% endblock %}

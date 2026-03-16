@@ -1,0 +1,179 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Settings - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 700px; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .form-card {
+        background: white; padding: 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .section-title {
+        font-size: 0.85rem; font-weight: 600; color: #f59e0b;
+        text-transform: uppercase; letter-spacing: 0.05em;
+        margin: 1.2rem 0 0.75rem; padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .section-title:first-child {
+        margin-top: 0; padding-top: 0; border-top: none;
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-label {
+        font-weight: 500; color: #475569;
+        font-size: 0.9rem; display: block; margin-bottom: 0.4rem;
+    }
+    .form-control {
+        width: 100%; padding: 0.65rem 1rem;
+        border: 2px solid #e2e8f0; border-radius: 8px;
+        font-size: 0.95rem; transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+    .form-control:focus { outline: none; border-color: #f59e0b; }
+    .form-control:disabled { background: #f8fafc; color: #94a3b8; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; }
+    .btn-group { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+    .btn-amber {
+        padding: 0.65rem 1.5rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white; border: none; border-radius: 8px;
+        font-weight: 600; cursor: pointer; font-size: 0.9rem;
+    }
+    .btn-amber:hover { opacity: 0.9; }
+    .btn-cancel {
+        padding: 0.65rem 1.5rem; background: #f1f5f9;
+        color: #475569; border: none; border-radius: 8px;
+        font-weight: 600; text-decoration: none; font-size: 0.9rem;
+        display: inline-flex; align-items: center;
+    }
+    .btn-cancel:hover { background: #e2e8f0; color: #475569; }
+    .info-box {
+        background: #fffbeb; border: 1px solid #fde68a;
+        border-radius: 8px; padding: 0.75rem 1rem;
+        font-size: 0.85rem; color: #92400e; margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+
+    <div class="page-header">
+        <div class="page-title">
+            <i class="bi bi-gear-fill"></i> Settings
+        </div>
+        <a href="{% url 'pharmacy_dashboard' %}" class="btn-cancel">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mb-3"
+             style="border-radius:8px;">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="form-card">
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="section-title">Account Information</div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" name="first_name"
+                           class="form-control"
+                           value="{{ user.first_name }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name"
+                           class="form-control"
+                           value="{{ user.last_name }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email"
+                       class="form-control"
+                       value="{{ user.email }}" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="text" name="phone"
+                       class="form-control"
+                       value="{{ profile.phone|default:'' }}"
+                       pattern="[1-9][0-9]{9}" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control"
+                       value="{{ user.username }}" disabled>
+                <div class="hint">Username cannot be changed</div>
+            </div>
+
+            <div class="section-title">Pharmacy Information</div>
+
+            <div class="form-group">
+                <label class="form-label">Pharmacy Name</label>
+                <input type="text" name="pharmacy_name"
+                       class="form-control"
+                       value="{{ user.pharmacy.pharmacy_name|default:'' }}"
+                       placeholder="Official pharmacy name">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">License Number</label>
+                <input type="text" name="license_number"
+                       class="form-control"
+                       value="{{ user.pharmacy.license_number|default:'' }}">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Address</label>
+                <textarea name="address" class="form-control"
+                          rows="2"
+                          placeholder="Complete pharmacy address">{{ user.pharmacy.address|default:'' }}</textarea>
+            </div>
+
+            <div class="section-title">Blockchain</div>
+
+            <div class="info-box">
+                <i class="bi bi-info-circle"></i>
+                Your Ethereum address is required to dispense
+                prescriptions on blockchain.
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Ethereum Wallet Address</label>
+                <input type="text" name="ethereum_address"
+                       class="form-control"
+                       value="{{ profile.ethereum_address|default:'' }}"
+                       placeholder="0x...">
+                <div class="hint">
+                    Get from Ganache — Account address starting with 0x
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn-amber">
+                    <i class="bi bi-check-circle"></i> Save Settings
+                </button>
+                <a href="{% url 'pharmacy_dashboard' %}"
+                   class="btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

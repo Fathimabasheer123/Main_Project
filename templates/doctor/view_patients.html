@@ -1,0 +1,94 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}My Patients - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-wrap { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+    .page-header {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .subtitle { font-size: 0.85rem; color: #64748b; }
+    .patient-card {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #0ea5e9;
+        margin-bottom: 0.75rem; display: flex;
+        justify-content: space-between; align-items: center;
+    }
+    .patient-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; font-weight: 700; font-size: 1rem;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; margin-right: 1rem;
+    }
+    .patient-name { font-weight: 600; color: #1e293b; }
+    .patient-meta { font-size: 0.85rem; color: #64748b; margin-top: 0.2rem; }
+    .rx-count {
+        background: #dbeafe; color: #1e40af;
+        padding: 0.3rem 0.8rem; border-radius: 20px;
+        font-size: 0.8rem; font-weight: 600; white-space: nowrap;
+    }
+    .empty-box { background: white; padding: 3rem; text-align: center; border-radius: 10px; color: #94a3b8; }
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white; text-decoration: none; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem; margin-top: 1rem;
+    }
+    .btn-back:hover { opacity: 0.9; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap">
+    <div class="page-header">
+        <div>
+            <div class="page-title">
+                <i class="bi bi-people-fill"></i> My Patients
+            </div>
+            <div class="subtitle">Total: {{ total_patients|default:"0" }}</div>
+        </div>
+        <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    {% if patients %}
+        {% for pd in patients %}
+        <div class="patient-card">
+            <div class="d-flex align-items-center">
+                <div class="patient-avatar">
+                    {{ pd.patient.user.first_name.0 }}{{ pd.patient.user.last_name.0 }}
+                </div>
+                <div>
+                    <div class="patient-name">
+                        {{ pd.patient.user.get_full_name }}
+                    </div>
+                    <div class="patient-meta">
+                        Last visit: {{ pd.last_visit|date:"d M Y" }}
+                    </div>
+                </div>
+            </div>
+            <span class="rx-count">
+                {{ pd.prescription_count }}
+                prescription{{ pd.prescription_count|pluralize }}
+            </span>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-box">
+            <i class="bi bi-people" style="font-size:3rem;display:block;margin-bottom:1rem;"></i>
+            <h5>No Patients Yet</h5>
+            <p>Patients will appear here once you create prescriptions</p>
+        </div>
+    {% endif %}
+
+    <a href="{% url 'doctor_dashboard' %}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

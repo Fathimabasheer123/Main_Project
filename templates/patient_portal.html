@@ -1,206 +1,263 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Patient Portal</title>
-    <meta charset="UTF-8">
-</head>
-<body>
-    <h1>👤 Patient Portal</h1>
-    <p><a href="/">← Back to Home</a></p>
-    
-    <hr>
-    
-    <h2>View Your Prescription</h2>
-    <p>Enter the Prescription ID given by your doctor:</p>
-    
-    <form id="viewForm">
-        <label>Prescription ID:</label><br>
-        <input type="text" id="prescriptionId" placeholder="e.g., a1b2c3d4e5f6g7h8" size="40"><br><br>
-        <button type="submit">🔍 View My Prescription</button>
-    </form>
-    
-    <hr>
-    
-    <div id="loading" style="display:none;">
-        <p>⏳ Retrieving prescription from blockchain...</p>
-    </div>
-    
-    <div id="prescription" style="display:none;">
-        <h2>📋 Your Prescription</h2>
-        
-        <h3>Basic Information</h3>
-        <table border="1" cellpadding="10">
-            <tr>
-                <td><strong>Prescription ID:</strong></td>
-                <td><code id="id"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Date Issued:</strong></td>
-                <td id="date"></td>
-            </tr>
-            <tr>
-                <td><strong>Status:</strong></td>
-                <td id="status"></td>
-            </tr>
-        </table>
-        
-        <h3>Medical Details</h3>
-        <table border="1" cellpadding="10">
-            <tr>
-                <td><strong>Patient Address:</strong></td>
-                <td><code id="patient"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Doctor Address:</strong></td>
-                <td><code id="doctor"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Diagnosed Disease:</strong></td>
-                <td id="disease"></td>
-            </tr>
-            <tr>
-                <td><strong>Prescribed Medication:</strong></td>
-                <td id="drug"></td>
-            </tr>
-            <tr>
-                <td><strong>Possible Side Effects:</strong></td>
-                <td id="effects"></td>
-            </tr>
-        </table>
-        
-        <h3>Blockchain Verification</h3>
-        <table border="1" cellpadding="10">
-            <tr>
-                <td><strong>IPFS Hash:</strong></td>
-                <td><code id="ipfs"></code></td>
-            </tr>
-            <tr>
-                <td><strong>Active:</strong></td>
-                <td id="active"></td>
-            </tr>
-            <tr>
-                <td><strong>Filled:</strong></td>
-                <td id="filled"></td>
-            </tr>
-        </table>
-        
-        <br>
-        <h3>Actions</h3>
-        <button onclick="downloadPrescription()">📥 Download Prescription (PDF)</button>
-        <button onclick="printPrescription()">🖨️ Print Prescription</button>
-        <button onclick="shareQR()">📱 Show QR Code for Pharmacy</button>
-        <button onclick="viewHistory()">📚 View My History</button>
-        
-        <br><br>
-        <button onclick="searchAnother()">🔍 Search Another Prescription</button>
-    </div>
-    
-    <div id="error" style="display:none; color:red;">
-        <h3>❌ Error</h3>
-        <p id="errorMessage"></p>
-        <button onclick="searchAnother()">Try Again</button>
-    </div>
-    
-    <div id="qrSection" style="display:none;">
-        <h2>📱 QR Code for Pharmacy</h2>
-        <p>Show this QR code to the pharmacy to fill your prescription:</p>
-        <div id="qrcode" style="border: 2px solid black; padding: 20px; display: inline-block;">
-            <p style="font-size: 20px; font-family: monospace;" id="qrText"></p>
+{% extends 'base_dashboard.html' %}
+{% block title %}Patient Portal - MedChain{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container { display: flex; min-height: 100vh; }
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, #10b981, #059669);
+        color: white; position: fixed; height: 100vh;
+        overflow-y: auto; z-index: 1000; display: flex; flex-direction: column;
+    }
+    .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.2); }
+    .sidebar-title { font-size: 1.3rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+    .sidebar-subtitle { font-size: 0.85rem; opacity: 0.85; margin-top: 0.3rem; }
+    .sidebar-menu { padding: 0.5rem 0; flex: 1; }
+    .menu-item {
+        padding: 0.85rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+        color: rgba(255,255,255,0.9); text-decoration: none;
+        border-left: 3px solid transparent; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+    }
+    .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.15); color: white; border-left-color: white; }
+    .menu-item i { width: 20px; text-align: center; }
+    .sidebar-footer { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.2); }
+    .main-content { margin-left: 260px; flex: 1; padding: 1.5rem; }
+    .top-bar {
+        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .page-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .user-avatar {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #059669);
+        display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;
+    }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+        background: white; padding: 1.2rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex;
+        justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;
+    }
+    .stat-label { font-size: 0.8rem; color: #64748b; }
+    .stat-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+    .icon-blue { background: #dbeafe; color: #3b82f6; }
+    .icon-green { background: #d1fae5; color: #10b981; }
+    .icon-orange { background: #fed7aa; color: #f59e0b; }
+    .content-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; border: 1px solid #e2e8f0; }
+    .card-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; }
+    .rx-row { padding: 0.75rem; border-left: 3px solid #10b981; background: #f0fdf4; border-radius: 6px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .rx-id { font-family: monospace; font-size: 0.85rem; color: #059669; }
+    .rx-info { font-size: 0.85rem; color: #64748b; }
+    .badge-filled { background: #dbeafe; color: #1e40af; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; }
+    .badge-pending { background: #fef3c7; color: #92400e; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; }
+    .btn-primary-custom { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+    .btn-primary-custom:hover { opacity: 0.9; color: white; }
+    .empty-msg { text-align: center; color: #94a3b8; padding: 2rem; }
+    .detail-box { padding: 1rem; border-radius: 8px; margin-top: 0.75rem; }
+    .detail-blue { background: #eff6ff; border-left: 3px solid #3b82f6; }
+    .detail-yellow { background: #fefce8; border-left: 3px solid #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title"><i class="bi bi-heart-pulse-fill"></i> MedChain</div>
+            <div class="sidebar-subtitle">{{ user.first_name }} {{ user.last_name }}</div>
         </div>
-        <br><br>
-        <button onclick="document.getElementById('qrSection').style.display='none'">Close QR Code</button>
+        <div class="sidebar-menu">
+            <a href="{% url 'patient_dashboard' %}" class="menu-item active">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="{% url 'prescription_history_patient' %}" class="menu-item">
+                <i class="bi bi-clock-history"></i> My Prescriptions
+            </a>
+            <a href="{% url 'medical_history_patient' %}" class="menu-item">
+                <i class="bi bi-file-medical"></i> Medical History
+            </a>
+            <a href="{% url 'my_doctors_patient' %}" class="menu-item">
+                <i class="bi bi-person-badge"></i> My Doctors
+            </a>
+            <a href="{% url 'update_profile_patient' %}" class="menu-item">
+                <i class="bi bi-gear-fill"></i> Settings
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <a href="{% url 'logout' %}" class="menu-item">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
     </div>
-    
-    <script>
-    let currentRx = null;
-    
-    document.getElementById('viewForm').onsubmit = async function(e) {
-        e.preventDefault();
-        
-        const prescriptionId = document.getElementById('prescriptionId').value.trim();
-        
-        if (!prescriptionId) {
-            alert('Please enter a Prescription ID');
-            return;
+
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <div class="top-bar">
+            <div>
+                <div class="page-title">My Health Portal</div>
+                <div style="font-size:0.85rem;color:#64748b;">{{ "now"|date:"l, d M Y" }}</div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="user-avatar">{{ user.first_name.0 }}</div>
+            </div>
+        </div>
+
+        <!-- Stats from DB -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Prescriptions</div>
+                    <div class="stat-value">{{ total_count|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-blue"><i class="bi bi-file-earmark-medical-fill"></i></div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Filled</div>
+                    <div class="stat-value">{{ filled_count|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-green"><i class="bi bi-check-circle-fill"></i></div>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value">{{ pending_count|default:"0" }}</div>
+                </div>
+                <div class="stat-icon icon-orange"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+        </div>
+
+        <!-- Search Prescription by ID -->
+        <div class="content-card">
+            <div class="card-title"><i class="bi bi-search"></i> Lookup Prescription</div>
+            <div class="row g-2">
+                <div class="col-md-9">
+                    <input type="text" class="form-control" id="searchId"
+                           placeholder="Enter Prescription ID (e.g., RX-ABC123...)">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary-custom w-100" onclick="lookupPrescription()">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </div>
+
+            <div id="lookupLoading" class="text-center py-3" style="display:none;">
+                <div class="spinner-border text-success"></div>
+                <div class="mt-2 text-muted small">Fetching from blockchain...</div>
+            </div>
+
+            <div id="lookupResult" style="display:none; margin-top:1rem;"></div>
+        </div>
+
+        <!-- Prescription History from DB -->
+        <div class="content-card">
+            <div class="card-title"><i class="bi bi-clock-history"></i> My Prescriptions</div>
+            {% if prescriptions %}
+                {% for rx in prescriptions %}
+                <div class="rx-row">
+                    <div>
+                        <div class="rx-id">{{ rx.prescription_id }}</div>
+                        <div class="rx-info">
+                            {{ rx.disease }} &bull;
+                            Dr. {% if rx.doctor %}{{ rx.doctor.user.get_full_name }}{% else %}Unknown{% endif %}
+                            &bull; {{ rx.created_at|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if rx.is_filled %}
+                            <span class="badge-filled">Filled</span>
+                        {% else %}
+                            <span class="badge-pending">Pending</span>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-success"
+                                onclick="showQR('{{ rx.prescription_id }}')">
+                            <i class="bi bi-qr-code"></i> QR
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-msg">
+                    <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
+                    No prescriptions yet.
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669);color:white;">
+                <h6 class="modal-title"><i class="bi bi-qr-code"></i> Prescription QR</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted small mb-2">Show this to the pharmacy</p>
+                <div id="qrDisplay" class="p-3 bg-light rounded"
+                     style="font-family:monospace;font-size:0.85rem;word-break:break-all;border:2px dashed #10b981;">
+                </div>
+                <p class="text-muted small mt-2">Prescription ID</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function lookupPrescription() {
+    const rxId = document.getElementById('searchId').value.trim();
+    if (!rxId) { alert('Enter a Prescription ID'); return; }
+
+    document.getElementById('lookupLoading').style.display = 'block';
+    document.getElementById('lookupResult').style.display = 'none';
+
+    try {
+        const res = await fetch(`/api/blockchain/get-prescription/${rxId}/`);
+        const data = await res.json();
+        document.getElementById('lookupLoading').style.display = 'none';
+
+        const div = document.getElementById('lookupResult');
+        div.style.display = 'block';
+
+        if (data.success) {
+            const rx = data.prescription;
+            const date = new Date(rx.timestamp * 1000).toLocaleDateString();
+            div.innerHTML = `
+                <div style="background:#f0fdf4;padding:1rem;border-radius:8px;border-left:3px solid #10b981;">
+                    <strong style="color:#065f46;">✅ Found on Blockchain</strong><br><br>
+                    <small style="color:#64748b;">
+                        <strong>ID:</strong> <code>${rx.id}</code><br>
+                        <strong>Issued:</strong> ${date}<br>
+                        <strong>Status:</strong> ${rx.is_filled ? '✅ Dispensed' : '⏳ Pending'}<br>
+                        <strong>Active:</strong> ${rx.is_active ? 'Yes' : 'No'}
+                    </small>
+                </div>`;
+        } else {
+            div.innerHTML = `
+                <div style="background:#fef2f2;padding:1rem;border-radius:8px;border-left:3px solid #ef4444;">
+                    <strong style="color:#991b1b;">❌ Not Found</strong><br>
+                    <small>${data.error || 'Prescription not found on blockchain'}</small>
+                </div>`;
         }
-        
-        // Show loading
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('prescription').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        
-        try {
-            const response = await fetch(`/api/blockchain/get-prescription/${prescriptionId}/`);
-            const data = await response.json();
-            
-            document.getElementById('loading').style.display = 'none';
-            
-            if (data.success) {
-                currentRx = data.prescription;
-                
-                // Fill in the data
-                document.getElementById('id').textContent = currentRx.id;
-                document.getElementById('patient').textContent = currentRx.patient;
-                document.getElementById('doctor').textContent = currentRx.doctor;
-                document.getElementById('disease').textContent = currentRx.disease;
-                document.getElementById('drug').textContent = currentRx.drug;
-                document.getElementById('effects').textContent = currentRx.adverse_effects;
-                document.getElementById('ipfs').textContent = currentRx.ipfs_hash;
-                
-                // Format date
-                const date = new Date(currentRx.timestamp * 1000);
-                document.getElementById('date').textContent = date.toLocaleString();
-                
-                // Status
-                const statusText = currentRx.is_filled ? '✅ Filled (Medicine Dispensed)' : '⏳ Not Filled Yet';
-                const statusColor = currentRx.is_filled ? 'green' : 'orange';
-                document.getElementById('status').innerHTML = `<span style="color:${statusColor}; font-weight:bold;">${statusText}</span>`;
-                
-                document.getElementById('active').textContent = currentRx.is_active ? 'Yes ✅' : 'No ❌';
-                document.getElementById('filled').textContent = currentRx.is_filled ? 'Yes ✅' : 'No ❌';
-                
-                // Show prescription
-                document.getElementById('prescription').style.display = 'block';
-                document.getElementById('prescription').scrollIntoView({behavior: 'smooth'});
-                
-            } else {
-                document.getElementById('errorMessage').textContent = data.error || 'Prescription not found';
-                document.getElementById('error').style.display = 'block';
-            }
-        } catch (error) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('errorMessage').textContent = 'Network error: ' + error.message;
-            document.getElementById('error').style.display = 'block';
-        }
-    };
-    
-    function searchAnother() {
-        document.getElementById('prescriptionId').value = '';
-        document.getElementById('prescription').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('qrSection').style.display = 'none';
-        document.getElementById('prescriptionId').focus();
+    } catch (err) {
+        document.getElementById('lookupLoading').style.display = 'none';
+        alert('Network error: ' + err.message);
     }
-    
-    function downloadPrescription() {
-        alert('Download PDF feature - will implement with PDF generation library');
-    }
-    
-    function printPrescription() {
-        window.print();
-    }
-    
-    function shareQR() {
-        if (!currentRx) return;
-        
-        document.getElementById('qrText').textContent = currentRx.id;
-        document.getElementById('qrSection').style.display = 'block';
-        document.getElementById('qrSection').scrollIntoView({behavior: 'smooth'});
-    }
-    
-    function viewHistory() {
-        alert('View History feature - will show all prescriptions for this patient address');
-    }
-    </script>
-</body>
-</html>
+}
+
+function showQR(prescriptionId) {
+    document.getElementById('qrDisplay').textContent = prescriptionId;
+    new bootstrap.Modal(document.getElementById('qrModal')).show();
+}
+</script>
+{% endblock %}

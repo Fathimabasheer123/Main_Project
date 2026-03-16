@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+.step-circle {
+    width: 80px;
+    height: 80px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+}
+</style>
+<!-- HERO SECTION -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+
+            <div class="col-lg-6">
+                <h1 class="fw-bold">
+                    Transform healthcare with <br>
+                    AI powered blockchain prescriptions
+                </h1>
+
+                <p class="mt-4 text-muted">
+                    Revolutionize prescription management with cutting-edge blockchain technology
+                    and artificial intelligence. Secure, transparent and intelligent
+                    healthcare solutions for the digital age.
+                </p>
+
+                <div class="mt-4">
+                    <a href="{% url 'register' %}" class="btn btn-success me-3 px-4">
+                        Get Started
+                    </a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-success px-4">
+                        Sign In
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-6 text-center">
+                <img src="{% static 'img/home.webp' %}" class="img-fluid rounded shadow">
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- POWERFUL FEATURES -->
+<section  id="features" class="py-5 text-center">
+    <div class="container">
+
+        <h2 class="fw-bold">Powerful Features</h2>
+        <p class="text-muted mb-5">
+            Experience next-generation prescription management with advanced security.
+        </p>
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <div class="p-4 shadow rounded bg-white h-100">
+                    <i class="fas fa-file-prescription fa-2x text-success mb-3"></i>
+                    <h5>Digital Prescriptions</h5>
+                    <p>Create and manage prescriptions digitally. No more paper-based errors or illegible handwriting.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-4 shadow rounded bg-white h-100">
+                    <i class="fas fa-shield-alt fa-2x text-primary mb-3"></i>
+                    <h5>Blockchain Security</h5>
+                    <p>Immutable prescription records stored on Ethereum blockchain ensuring complete data integrity and preventing fraud.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-4 shadow rounded bg-white h-100">
+                    <i class="fas fa-robot fa-2x text-danger mb-3"></i>
+                    <h5>AI-Powered Analysis</h5>
+                    <p>Machine learning models predict diseases, recommend drugs, and analyze adverse reactions with high accuracy.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-4 shadow rounded bg-white h-100">
+                    <i class="fas fa-bolt fa-2x text-warning mb-3"></i>
+                    <h5>Instant Verification</h5>
+                    <p>Real-time prescription verification and dispensing tracking with complete audit trail on blockchain.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-4 shadow rounded bg-white h-100">
+                    <i class="fas fa-qrcode fa-2x text-info mb-3"></i>
+                    <h5>QR Code Access</h5>
+                    <p>Quick prescription access via QR codes for seamless patient-pharmacy interaction and verification.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-4 shadow rounded bg-white h-100">
+                    <i class="fas fa-chart-line fa-2x text-primary mb-3"></i>
+                    <h5>Analytics Dashboard</h5>
+                    <p>Comprehensive analytics and reporting for better healthcare decision 
+                        making and patient outcomes.</p>
+                </div>
+
+        </div>
+    </div>
+</section>
+<!-- ================= HOW IT WORKS (DARK VERSION) ================= -->
+<section  id="how-it-works" class="py-5 text-white" style="background: linear-gradient(135deg, #1e293b, #0f172a);">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-5">How It Works</h2>
+
+        <div class="row g-4">
+
+            <!-- Step 1 -->
+            <div class="col-md-3">
+                <div class="p-4">
+                    <div class="step-circle mx-auto mb-4">1</div>
+                    <h5 class="fw-bold">Doctor Creates Prescription</h5>
+                    <p class="text-light">
+                        Doctor logs in, enters patient details and symptoms, 
+                        and creates a digital prescription.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="col-md-3">
+                <div class="p-4">
+                    <div class="step-circle mx-auto mb-4">2</div>
+                    <h5 class="fw-bold">Patient Receives Notification</h5>
+                    <p class="text-light">
+                        Patient gets instant notification about the new 
+                        prescription on their dashboard.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="col-md-3">
+                <div class="p-4">
+                    <div class="step-circle mx-auto mb-4">3</div>
+                    <h5 class="fw-bold">Pharmacy Dispenses</h5>
+                    <p class="text-light">
+                        Patient visits pharmacy, pharmacist verifies 
+                        and dispenses the medication.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="col-md-3">
+                <div class="p-4">
+                    <div class="step-circle mx-auto mb-4">4</div>
+                    <h5 class="fw-bold">Record Maintained</h5>
+                    <p class="text-light">
+                        Complete history maintained for future reference 
+                        and medical records.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- CTA SECTION -->
+<section class="py-5 text-center text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
+    <div class="container">
+        <h2 class="fw-bold">Ready to Transform Healthcare?</h2>
+        <p class="mt-3">
+            Join doctors, patients, and pharmacies using MedChain 
+            for secure and intelligent prescription management.
+        </p>
+
+        <div class="mt-4">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-light px-4 me-3">
+                    Go to Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'register' %}" class="btn btn-light px-4 me-3">
+                    Create Account
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-light px-4">
+                    Sign In
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}
