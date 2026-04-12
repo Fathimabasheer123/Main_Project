@@ -1,7 +1,4 @@
-# apps/prescriptions/views.py  (additions/replacements for walk-in patient support)
-# Add these NEW views to your existing views.py
-# ─────────────────────────────────────────────────────────────────────────────
-# COMPLETE REPLACEMENT — paste this entire file
+# apps/prescriptions/views.py
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
@@ -15,7 +12,8 @@ from datetime import timedelta
 from .forms import RegisterForm
 from .models import (
     UserProfile, PrescriptionRecord,
-    Doctor, Patient, Pharmacy, WalkInPatient
+    Doctor, Patient, Pharmacy, WalkInPatient,
+    Notification
 )
 
 
@@ -55,116 +53,157 @@ def register_view(request):
                 user_type = form.cleaned_data['user_type']
 
                 UserProfile.objects.create(
-                    user=user,
-                    user_type=user_type,
-                    phone=form.cleaned_data['phone']
+                    user      = user,
+                    user_type = user_type,
+                    phone     = form.cleaned_data['phone']
                 )
 
                 if user_type == 'doctor':
-                    license_no = request.POST.get('license_number', '').strip()
+                    license_no = request.POST.get(
+                        'license_number', ''
+                    ).strip()
                     if not license_no:
                         user.delete()
-                        messages.error(request, 'Medical License Number is required for doctors.')
-                        return render(request, 'auth/register.html', {'form': form})
+                        messages.error(
+                            request,
+                            'Medical License Number is required '
+                            'for doctors.'
+                        )
+                        return render(
+                            request, 'auth/register.html',
+                            {'form': form}
+                        )
 
                     doctor = Doctor.objects.create(
-                        user=user,
-                        license_number=license_no,
-                        specialization=request.POST.get(
+                        user                = user,
+                        license_number      = license_no,
+                        specialization      = request.POST.get(
                             'specialization', 'General Physician'
                         ).strip(),
-                        hospital=request.POST.get('hospital', '').strip(),
-                        verification_status='pending'
+                        hospital            = request.POST.get(
+                            'hospital', ''
+                        ).strip(),
+                        verification_status = 'pending'
                     )
                     if request.FILES.get('license_document'):
-                        doctor.license_document = request.FILES['license_document']
+                        doctor.license_document = (
+                            request.FILES['license_document']
+                        )
                         doctor.save()
 
                     messages.success(
                         request,
-                        '✅ Registration submitted! Admin will verify your '
-                        'Medical License Number before granting access.'
+                        '✅ Registration submitted! Admin will verify '
+                        'your Medical License Number before granting '
+                        'access.'
                     )
                     return redirect('login')
 
                 elif user_type == 'pharmacy':
-                    license_no = request.POST.get('drug_license', '').strip()
+                    license_no = request.POST.get(
+                        'drug_license', ''
+                    ).strip()
                     if not license_no:
                         user.delete()
-                        messages.error(request, 'Drug License Number is required for pharmacies.')
-                        return render(request, 'auth/register.html', {'form': form})
+                        messages.error(
+                            request,
+                            'Drug License Number is required '
+                            'for pharmacies.'
+                        )
+                        return render(
+                            request, 'auth/register.html',
+                            {'form': form}
+                        )
 
                     pharmacy = Pharmacy.objects.create(
-                        user=user,
-                        pharmacy_name=request.POST.get('pharmacy_name', '').strip(),
-                        license_number=license_no,
-                        address=request.POST.get('address', '').strip(),
-                        verification_status='pending'
+                        user                = user,
+                        pharmacy_name       = request.POST.get(
+                            'pharmacy_name', ''
+                        ).strip(),
+                        license_number      = license_no,
+                        address             = request.POST.get(
+                            'address', ''
+                        ).strip(),
+                        verification_status = 'pending'
                     )
                     if request.FILES.get('license_document'):
-                        pharmacy.license_document = request.FILES['license_document']
+                        pharmacy.license_document = (
+                            request.FILES['license_document']
+                        )
                         pharmacy.save()
 
                     messages.success(
                         request,
-                        '✅ Registration submitted! Admin will verify your '
-                        'Pharmacy License Number before granting access.'
+                        '✅ Registration submitted! Admin will verify '
+                        'your Pharmacy License Number before granting '
+                        'access.'
                     )
                     return redirect('login')
 
                 elif user_type == 'patient':
-                    dob          = request.POST.get('date_of_birth', '').strip()
-                    blood        = request.POST.get('blood_group', 'Unknown').strip()
+                    dob          = request.POST.get(
+                        'date_of_birth', ''
+                    ).strip()
+                    blood        = request.POST.get(
+                        'blood_group', 'Unknown'
+                    ).strip()
                     gender       = request.POST.get('gender', '').strip()
-                    walkin_id    = request.POST.get('walkin_patient_id', '').strip().upper()
-                    walkin_phone = request.POST.get('walkin_phone', '').strip()
+                    walkin_id    = request.POST.get(
+                        'walkin_patient_id', ''
+                    ).strip().upper()
+                    walkin_phone = request.POST.get(
+                        'walkin_phone', ''
+                    ).strip()
 
                     patient = Patient.objects.create(
-                        user=user,
-                        blood_group=blood or 'Unknown',
-                        gender=gender,
+                        user        = user,
+                        blood_group = blood or 'Unknown',
+                        gender      = gender,
                     )
                     if dob:
                         from datetime import date
                         try:
-                            patient.date_of_birth = date.fromisoformat(dob)
+                            patient.date_of_birth = (
+                                date.fromisoformat(dob)
+                            )
                             patient.save()
                         except Exception:
                             pass
 
-                    # ── Claim walk-in record if ID + phone provided ───────
+                    # Claim walk-in record if ID + phone provided
                     if walkin_id and walkin_phone:
                         try:
                             walkin = WalkInPatient.objects.get(
-                                patient_id=walkin_id,
-                                phone=walkin_phone
+                                patient_id = walkin_id,
+                                phone      = walkin_phone
                             )
-                            # Link all past prescriptions to new Patient account
                             PrescriptionRecord.objects.filter(
                                 walkin_patient=walkin
                             ).update(patient=patient)
 
-                            # Copy blood group / allergies if not set
-                            if not patient.blood_group or patient.blood_group == 'Unknown':
+                            if not patient.blood_group or \
+                               patient.blood_group == 'Unknown':
                                 patient.blood_group = walkin.blood_group
                             if not patient.allergies:
                                 patient.allergies = walkin.allergies
                             patient.save()
 
-                            # Transfer wallet address
-                            if walkin.ethereum_address and not request.user.profile.ethereum_address:
+                            if walkin.ethereum_address and \
+                               not user.profile.ethereum_address:
                                 profile = user.profile
-                                profile.ethereum_address = walkin.ethereum_address
+                                profile.ethereum_address = (
+                                    walkin.ethereum_address
+                                )
                                 profile.save()
 
-                            # Mark walk-in as claimed (optional: delete or keep)
                             walkin.delete()
 
                             login(request, user)
                             messages.success(
                                 request,
                                 f'✅ Account created and linked! '
-                                f'Your past prescriptions have been transferred. '
+                                f'Your past prescriptions have been '
+                                f'transferred. '
                                 f'Patient ID: {patient.patient_id}'
                             )
                             return redirect('dashboard')
@@ -173,7 +212,8 @@ def register_view(request):
                             messages.warning(
                                 request,
                                 '⚠️ Walk-in ID or phone did not match. '
-                                'Account created without linking past records.'
+                                'Account created without linking past '
+                                'records.'
                             )
 
                     login(request, user)
@@ -213,7 +253,9 @@ def login_view(request):
             messages.error(request, 'Please select your role')
             return render(request, 'auth/login.html')
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(
+            request, username=username, password=password
+        )
 
         if user is not None:
             if user.is_superuser or user.is_staff:
@@ -229,7 +271,8 @@ def login_view(request):
             if profile.user_type != user_type:
                 messages.error(
                     request,
-                    f'You are registered as {profile.get_user_type_display()}, '
+                    f'You are registered as '
+                    f'{profile.get_user_type_display()}, '
                     f'not {user_type.title()}'
                 )
                 return render(request, 'auth/login.html')
@@ -240,15 +283,17 @@ def login_view(request):
                     if doctor.verification_status == 'pending':
                         messages.warning(
                             request,
-                            '⏳ Your account is pending admin verification. '
-                            'You will be notified once approved.'
+                            '⏳ Your account is pending admin '
+                            'verification. You will be notified once '
+                            'approved.'
                         )
                         return render(request, 'auth/login.html')
                     if doctor.verification_status == 'rejected':
                         messages.error(
                             request,
                             f'❌ Registration rejected. '
-                            f'Reason: {doctor.rejection_reason or "Contact admin"}'
+                            f'Reason: '
+                            f'{doctor.rejection_reason or "Contact admin"}'
                         )
                         return render(request, 'auth/login.html')
                 except Doctor.DoesNotExist:
@@ -261,22 +306,28 @@ def login_view(request):
                     if pharmacy.verification_status == 'pending':
                         messages.warning(
                             request,
-                            '⏳ Your pharmacy is pending admin verification.'
+                            '⏳ Your pharmacy is pending admin '
+                            'verification.'
                         )
                         return render(request, 'auth/login.html')
                     if pharmacy.verification_status == 'rejected':
                         messages.error(
                             request,
                             f'❌ Registration rejected. '
-                            f'Reason: {pharmacy.rejection_reason or "Contact admin"}'
+                            f'Reason: '
+                            f'{pharmacy.rejection_reason or "Contact admin"}'
                         )
                         return render(request, 'auth/login.html')
                 except Pharmacy.DoesNotExist:
-                    messages.error(request, 'Pharmacy profile not found')
+                    messages.error(
+                        request, 'Pharmacy profile not found'
+                    )
                     return render(request, 'auth/login.html')
 
             login(request, user)
-            messages.success(request, f'Welcome back, {user.first_name}! 👋')
+            messages.success(
+                request, f'Welcome back, {user.first_name}! 👋'
+            )
             return redirect('dashboard')
 
         else:
@@ -322,11 +373,12 @@ def doctor_dashboard(request):
         return redirect('dashboard')
     try:
         doctor        = request.user.doctor
-        prescriptions = PrescriptionRecord.objects.filter(doctor=doctor)
-        total         = prescriptions.count()
-        filled        = prescriptions.filter(is_filled=True).count()
+        prescriptions = PrescriptionRecord.objects.filter(
+            doctor=doctor
+        )
+        total  = prescriptions.count()
+        filled = prescriptions.filter(is_filled=True).count()
 
-        # Count unique patients (both types)
         reg_patients    = prescriptions.filter(
             patient__isnull=False
         ).values('patient').distinct().count()
@@ -335,16 +387,18 @@ def doctor_dashboard(request):
         ).values('walkin_patient').distinct().count()
 
         context = {
-            'doctor':               doctor,
-            'total_prescriptions':  total,
-            'pending_approvals':    prescriptions.filter(
+            'doctor'              : doctor,
+            'total_prescriptions' : total,
+            'pending_approvals'   : prescriptions.filter(
                 is_filled=False, is_cancelled=False
             ).count(),
-            'total_patients':       reg_patients + walkin_patients,
-            'success_rate':         round(
+            'total_patients'      : reg_patients + walkin_patients,
+            'success_rate'        : round(
                 (filled / total * 100) if total > 0 else 0, 1
             ),
-            'recent_prescriptions': prescriptions.order_by('-created_at')[:5],
+            'recent_prescriptions': prescriptions.order_by(
+                '-created_at'
+            )[:5],
         }
     except Exception:
         context = {
@@ -355,13 +409,12 @@ def doctor_dashboard(request):
     return render(request, 'doctor_dashboard.html', context)
 
 
-# ── NEW: Register Walk-in Patient ─────────────────────
-
 @login_required
 def register_walkin_patient(request):
-    """Doctor registers a walk-in patient directly"""
     if not check_role(request, 'doctor'):
-        return JsonResponse({'success': False, 'error': 'Access denied'}, status=403)
+        return JsonResponse(
+            {'success': False, 'error': 'Access denied'}, status=403
+        )
 
     if request.method == 'POST':
         import json
@@ -376,11 +429,20 @@ def register_walkin_patient(request):
             allergies = data.get('allergies', '').strip()
 
             if not full_name:
-                return JsonResponse({'success': False, 'error': 'Full name is required'})
+                return JsonResponse(
+                    {'success': False, 'error': 'Full name is required'}
+                )
             if not phone:
-                return JsonResponse({'success': False, 'error': 'Phone number is required'})
-            if len(phone) != 10 or not phone.isdigit() or phone[0] == '0':
-                return JsonResponse({'success': False, 'error': 'Phone must be 10 digits, not starting with 0'})
+                return JsonResponse(
+                    {'success': False, 'error': 'Phone number is required'}
+                )
+            if len(phone) != 10 or not phone.isdigit() or \
+               phone[0] == '0':
+                return JsonResponse({
+                    'success': False,
+                    'error':   'Phone must be 10 digits, '
+                               'not starting with 0'
+                })
 
             doctor = request.user.doctor
 
@@ -400,22 +462,21 @@ def register_walkin_patient(request):
                 except Exception:
                     pass
 
-            walkin.save()  # triggers signal → auto-assigns wallet
-
-            # Refresh to get wallet
+            walkin.save()
             walkin.refresh_from_db()
 
             return JsonResponse({
-                'success':     True,
-                'patient_id':  walkin.patient_id,
-                'full_name':   walkin.full_name,
-                'phone':       walkin.phone,
-                'dob':         walkin.date_of_birth.strftime('%d %b %Y') if walkin.date_of_birth else 'N/A',
-                'gender':      walkin.gender,
+                'success'    : True,
+                'patient_id' : walkin.patient_id,
+                'full_name'  : walkin.full_name,
+                'phone'      : walkin.phone,
+                'dob'        : walkin.date_of_birth.strftime('%d %b %Y')
+                               if walkin.date_of_birth else 'N/A',
+                'gender'     : walkin.gender,
                 'blood_group': walkin.blood_group,
-                'age':         walkin.age,
-                'wallet':      walkin.ethereum_address or '',
-                'message':     f'Patient registered! ID: {walkin.patient_id}'
+                'age'        : walkin.age,
+                'wallet'     : walkin.ethereum_address or '',
+                'message'    : f'Patient registered! ID: {walkin.patient_id}'
             })
 
         except Exception as e:
@@ -424,23 +485,21 @@ def register_walkin_patient(request):
     return render(request, 'doctor/register_patient.html')
 
 
-# ── NEW: Lookup Patient by ID or Phone ───────────────
-
 @login_required
 def lookup_patient(request):
-    """
-    Doctor enters Patient ID (P-XXXXX) or phone number
-    → Returns patient details to pre-fill prescription form
-    Works for both registered patients and walk-in patients
-    """
     if not check_role(request, 'doctor'):
-        return JsonResponse({'success': False, 'error': 'Access denied'}, status=403)
+        return JsonResponse(
+            {'success': False, 'error': 'Access denied'}, status=403
+        )
 
     query = request.GET.get('q', '').strip()
     if not query:
-        return JsonResponse({'success': False, 'error': 'Enter Patient ID or phone number'})
+        return JsonResponse(
+            {'success': False,
+             'error': 'Enter Patient ID or phone number'}
+        )
 
-    # ── Search WalkInPatient ──────────────────────────
+    # Search WalkInPatient
     walkin = None
     if query.upper().startswith('P-'):
         walkin = WalkInPatient.objects.filter(
@@ -450,7 +509,6 @@ def lookup_patient(request):
         walkin = WalkInPatient.objects.filter(phone=query).first()
 
     if walkin:
-        # Get prescription count
         rx_count = PrescriptionRecord.objects.filter(
             walkin_patient=walkin
         ).count()
@@ -459,31 +517,34 @@ def lookup_patient(request):
         ).order_by('-created_at').first()
 
         return JsonResponse({
-            'success':     True,
-            'type':        'walkin',
-            'patient_id':  walkin.patient_id,
-            'full_name':   walkin.full_name,
-            'phone':       walkin.phone,
-            'dob':         walkin.date_of_birth.strftime('%d %b %Y') if walkin.date_of_birth else 'N/A',
-            'gender':      walkin.gender,
+            'success'    : True,
+            'type'       : 'walkin',
+            'patient_id' : walkin.patient_id,
+            'full_name'  : walkin.full_name,
+            'phone'      : walkin.phone,
+            'dob'        : walkin.date_of_birth.strftime('%d %b %Y')
+                           if walkin.date_of_birth else 'N/A',
+            'gender'     : walkin.gender,
             'blood_group': walkin.blood_group,
-            'age':         walkin.age,
-            'allergies':   walkin.allergies,
-            'wallet':      walkin.ethereum_address or '',
-            'rx_count':    rx_count,
-            'last_visit':  last_rx.created_at.strftime('%d %b %Y') if last_rx else 'First visit',
+            'age'        : walkin.age,
+            'allergies'  : walkin.allergies,
+            'wallet'     : walkin.ethereum_address or '',
+            'rx_count'   : rx_count,
+            'last_visit' : last_rx.created_at.strftime('%d %b %Y')
+                           if last_rx else 'First visit',
         })
 
-    # ── Search Registered Patient ─────────────────────
+    # Search Registered Patient
     reg_patient = None
     if query.upper().startswith('P-'):
         reg_patient = Patient.objects.filter(
             patient_id__iexact=query
         ).select_related('user', 'user__profile').first()
     else:
-        # Search by phone
         try:
-            profile = UserProfile.objects.get(phone=query, user_type='patient')
+            profile     = UserProfile.objects.get(
+                phone=query, user_type='patient'
+            )
             reg_patient = profile.user.patient
         except Exception:
             pass
@@ -497,19 +558,21 @@ def lookup_patient(request):
         ).order_by('-created_at').first()
 
         return JsonResponse({
-            'success':     True,
-            'type':        'registered',
-            'patient_id':  reg_patient.patient_id,
-            'full_name':   reg_patient.user.get_full_name(),
-            'phone':       reg_patient.phone,
-            'dob':         reg_patient.date_of_birth.strftime('%d %b %Y') if reg_patient.date_of_birth else 'N/A',
-            'gender':      reg_patient.gender,
+            'success'    : True,
+            'type'       : 'registered',
+            'patient_id' : reg_patient.patient_id,
+            'full_name'  : reg_patient.user.get_full_name(),
+            'phone'      : reg_patient.phone,
+            'dob'        : reg_patient.date_of_birth.strftime('%d %b %Y')
+                           if reg_patient.date_of_birth else 'N/A',
+            'gender'     : reg_patient.gender,
             'blood_group': reg_patient.blood_group,
-            'age':         reg_patient.age,
-            'allergies':   reg_patient.allergies,
-            'wallet':      reg_patient.wallet or '',
-            'rx_count':    rx_count,
-            'last_visit':  last_rx.created_at.strftime('%d %b %Y') if last_rx else 'First visit',
+            'age'        : reg_patient.age,
+            'allergies'  : reg_patient.allergies,
+            'wallet'     : reg_patient.wallet or '',
+            'rx_count'   : rx_count,
+            'last_visit' : last_rx.created_at.strftime('%d %b %Y')
+                           if last_rx else 'First visit',
         })
 
     return JsonResponse({
@@ -522,57 +585,50 @@ def lookup_patient(request):
 def view_patients(request):
     if not check_role(request, 'doctor'):
         return redirect('dashboard')
+
     try:
-        doctor = request.user.doctor
-        # Registered patients
-        reg_rxs = PrescriptionRecord.objects.filter(
-            doctor=doctor, patient__isnull=False
-        ).select_related('patient', 'patient__user')
+        doctor = request.user.doctor  # ✅ correct: related_name='doctor' in Doctor model
+    except Doctor.DoesNotExist:
+        return redirect('dashboard')
 
-        # Walk-in patients
-        walkin_rxs = PrescriptionRecord.objects.filter(
-            doctor=doctor, walkin_patient__isnull=False
-        ).select_related('walkin_patient')
+    prescriptions = PrescriptionRecord.objects.filter(
+        doctor=doctor
+    ).select_related('patient', 'patient__user', 'walkin_patient')
 
-        patients = {}
-        for rx in reg_rxs:
-            key = f'reg_{rx.patient.id}'
-            if key not in patients:
-                patients[key] = {
-                    'name':       rx.patient.user.get_full_name(),
-                    'patient_id': rx.patient.patient_id,
-                    'type':       'Registered',
-                    'phone':      rx.patient.phone,
-                    'rx_count':   0,
-                    'last_visit': rx.created_at,
-                }
-            patients[key]['rx_count'] += 1
-            if rx.created_at > patients[key]['last_visit']:
-                patients[key]['last_visit'] = rx.created_at
+    seen = set()
+    patient_data = []
 
-        for rx in walkin_rxs:
-            key = f'wi_{rx.walkin_patient.id}'
-            if key not in patients:
-                patients[key] = {
-                    'name':       rx.walkin_patient.full_name,
-                    'patient_id': rx.walkin_patient.patient_id,
-                    'type':       'Walk-in',
-                    'phone':      rx.walkin_patient.phone,
-                    'rx_count':   0,
-                    'last_visit': rx.created_at,
-                }
-            patients[key]['rx_count'] += 1
-            if rx.created_at > patients[key]['last_visit']:
-                patients[key]['last_visit'] = rx.created_at
+    for rx in prescriptions.order_by('-created_at'):
 
-        context = {
-            'patients':       list(patients.values()),
-            'total_patients': len(patients),
-        }
-    except Exception:
-        context = {'patients': [], 'total_patients': 0}
-    return render(request, 'doctor/view_patients.html', context)
+        # ── Registered patient ──
+        if rx.patient and rx.patient.id not in seen:
+            seen.add(rx.patient.id)
+            patient_data.append({
+                'name':               rx.patient.user.get_full_name(),
+                'avatar':             rx.patient.user.first_name[:1] + rx.patient.user.last_name[:1],
+                'prescription_count': prescriptions.filter(patient=rx.patient).count(),
+                'last_visit':         prescriptions.filter(patient=rx.patient).order_by('-created_at').first().created_at,
+                'type':               'registered',
+            })
 
+        # ── Walk-in patient ──
+        elif rx.walkin_patient:
+            key = f'w_{rx.walkin_patient.id}'
+            if key not in seen:
+                seen.add(key)
+                patient_data.append({
+                    'name':               rx.walkin_patient.full_name,
+                    'avatar':             rx.walkin_patient.full_name[:1],
+                    'prescription_count': prescriptions.filter(walkin_patient=rx.walkin_patient).count(),
+                    'last_visit':         prescriptions.filter(walkin_patient=rx.walkin_patient).order_by('-created_at').first().created_at,
+                    'type':               'walkin',
+                })
+
+    return render(request, 'doctor/view_patients.html', {
+        'patients':       patient_data,
+        'total_patients': len(patient_data),
+    })
+    
 
 @login_required
 def prescription_history_doctor(request):
@@ -583,7 +639,7 @@ def prescription_history_doctor(request):
     ).order_by('-created_at')
     return render(request, 'doctor/prescription_history.html', {
         'prescriptions': prescriptions,
-        'total_count':   prescriptions.count()
+        'total_count'  : prescriptions.count()
     })
 
 
@@ -597,15 +653,24 @@ def search_prescription_doctor(request):
         results = PrescriptionRecord.objects.filter(
             doctor__user=request.user
         ).filter(
-            db_models.Q(prescription_id__icontains=query) |
-            db_models.Q(patient__user__first_name__icontains=query) |
-            db_models.Q(patient__user__last_name__icontains=query) |
-            db_models.Q(walkin_patient__full_name__icontains=query) |
+            db_models.Q(
+                prescription_id__icontains=query
+            ) |
+            db_models.Q(
+                patient__user__first_name__icontains=query
+            ) |
+            db_models.Q(
+                patient__user__last_name__icontains=query
+            ) |
+            db_models.Q(
+                walkin_patient__full_name__icontains=query
+            ) |
             db_models.Q(disease__icontains=query) |
             db_models.Q(drug__icontains=query)
         )
     return render(request, 'doctor/search_prescription.html', {
-        'query': query, 'results': results,
+        'query'       : query,
+        'results'     : results,
         'result_count': len(results) if results else 0
     })
 
@@ -614,17 +679,27 @@ def search_prescription_doctor(request):
 def doctor_analytics(request):
     if not check_role(request, 'doctor'):
         return redirect('dashboard')
-    prescriptions = PrescriptionRecord.objects.filter(doctor__user=request.user)
+    prescriptions = PrescriptionRecord.objects.filter(
+        doctor__user=request.user
+    )
     total   = prescriptions.count()
     filled  = prescriptions.filter(is_filled=True).count()
-    pending = prescriptions.filter(is_filled=False, is_cancelled=False).count()
+    pending = prescriptions.filter(
+        is_filled=False, is_cancelled=False
+    ).count()
     return render(request, 'doctor/analytics.html', {
-        'total_prescriptions':   total,
-        'filled_prescriptions':  filled,
+        'total_prescriptions'  : total,
+        'filled_prescriptions' : filled,
         'pending_prescriptions': pending,
-        'total_patients':        prescriptions.values('patient').distinct().count(),
-        'success_rate': round((filled / total * 100) if total > 0 else 0, 1),
-        'pending_rate': round((pending / total * 100) if total > 0 else 0, 1),
+        'total_patients'       : prescriptions.values(
+            'patient'
+        ).distinct().count(),
+        'success_rate': round(
+            (filled / total * 100) if total > 0 else 0, 1
+        ),
+        'pending_rate': round(
+            (pending / total * 100) if total > 0 else 0, 1
+        ),
     })
 
 
@@ -645,8 +720,12 @@ def update_profile_doctor(request):
     if not check_role(request, 'doctor'):
         return redirect('dashboard')
     if request.method == 'POST':
-        request.user.first_name = request.POST.get('first_name', '').strip()
-        request.user.last_name  = request.POST.get('last_name', '').strip()
+        request.user.first_name = request.POST.get(
+            'first_name', ''
+        ).strip()
+        request.user.last_name  = request.POST.get(
+            'last_name', ''
+        ).strip()
         request.user.email      = request.POST.get('email', '').strip()
         request.user.save()
         profile       = request.user.profile
@@ -657,7 +736,9 @@ def update_profile_doctor(request):
             ln = request.POST.get('license_number', '').strip()
             if ln:
                 doctor.license_number = ln
-            doctor.specialization = request.POST.get('specialization', doctor.specialization).strip()
+            doctor.specialization = request.POST.get(
+                'specialization', doctor.specialization
+            ).strip()
             doctor.hospital = request.POST.get('hospital', '').strip()
             doctor.save()
         except Exception:
@@ -674,24 +755,86 @@ def patient_dashboard(request):
     if not check_role(request, 'patient'):
         return redirect('dashboard')
     try:
-        patient       = request.user.patient
+        patient = request.user.patient
+
+        # FIX Bug 1: Added select_related for correct field access
         prescriptions = PrescriptionRecord.objects.filter(
             patient=patient
+        ).select_related(
+            'doctor',
+            'doctor__user',
+            'walkin_patient'
         ).order_by('-created_at')
+
+        total_count   = prescriptions.count()
+        filled_count  = prescriptions.filter(is_filled=True).count()
+        pending_count = prescriptions.filter(
+            is_filled=False, is_cancelled=False
+        ).count()
+
+        # FIX Bug 3: Fetch notifications for bell icon
+        notifications = Notification.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:10]
+
+        unread_count = Notification.objects.filter(
+            user=request.user, is_read=False
+        ).count()
+
         return render(request, 'patient_portal.html', {
-            'patient':       patient,
-            'total_count':   prescriptions.count(),
-            'filled_count':  prescriptions.filter(is_filled=True).count(),
-            'pending_count': prescriptions.filter(
-                is_filled=False, is_cancelled=False
-            ).count(),
-            'prescriptions': prescriptions[:10],
+            'patient'      : patient,
+            'prescriptions': prescriptions,
+            'total_count'  : total_count,
+            'filled_count' : filled_count,
+            'pending_count': pending_count,
+            'notifications': notifications,
+            'unread_count' : unread_count,
         })
-    except Exception:
+
+    except Patient.DoesNotExist:
         return render(request, 'patient_portal.html', {
-            'total_count': 0, 'filled_count': 0,
-            'pending_count': 0, 'prescriptions': []
+            'patient'      : None,
+            'prescriptions': [],
+            'total_count'  : 0,
+            'filled_count' : 0,
+            'pending_count': 0,
+            'notifications': [],
+            'unread_count' : 0,
         })
+    except Exception as e:
+        print(f'[PATIENT DASHBOARD] Error: {e}')
+        return render(request, 'patient_portal.html', {
+            'patient'      : None,
+            'prescriptions': [],
+            'total_count'  : 0,
+            'filled_count' : 0,
+            'pending_count': 0,
+            'notifications': [],
+            'unread_count' : 0,
+        })
+
+
+# FIX Bug 3: Mark single notification as read
+@login_required
+def mark_notification_read(request, notification_id):
+    try:
+        notif         = Notification.objects.get(
+            id=notification_id, user=request.user
+        )
+        notif.is_read = True
+        notif.save()
+    except Notification.DoesNotExist:
+        pass
+    return redirect('patient_dashboard')
+
+
+# FIX Bug 3: Mark all notifications as read
+@login_required
+def mark_all_notifications_read(request):
+    Notification.objects.filter(
+        user=request.user, is_read=False
+    ).update(is_read=True)
+    return redirect('patient_dashboard')
 
 
 @login_required
@@ -699,15 +842,18 @@ def prescription_history_patient(request):
     if not check_role(request, 'patient'):
         return redirect('dashboard')
     try:
-        patient = request.user.patient
+        patient       = request.user.patient
         prescriptions = PrescriptionRecord.objects.filter(
             patient=patient
-        ).select_related('doctor', 'doctor__user').order_by('-created_at')
+        ).select_related(
+            'doctor', 'doctor__user'
+        ).order_by('-created_at')
     except Exception:
         prescriptions = []
     return render(request, 'patient/prescription_history.html', {
         'prescriptions': prescriptions,
-        'total_count':   len(prescriptions) if prescriptions else 0
+        'total_count'  : len(prescriptions)
+                         if prescriptions else 0
     })
 
 
@@ -722,12 +868,9 @@ def generate_qr_patient(request, prescription_id):
     )
     return render(request, 'patient/generate_qr.html', {
         'prescription': prescription,
-        'qr_data':      prescription.prescription_id
+        'qr_data'     : prescription.prescription_id
     })
 
-
-# Replace the download_prescription_pdf function in apps/prescriptions/views.py
-# Find the existing function and replace it with this complete version.
 
 @login_required
 def download_prescription_pdf(request, prescription_id):
@@ -736,7 +879,13 @@ def download_prescription_pdf(request, prescription_id):
         return redirect('dashboard')
 
     try:
-        rx = PrescriptionRecord.objects.get(
+        rx = PrescriptionRecord.objects.select_related(
+            'doctor',
+            'doctor__user',
+            'patient',
+            'patient__user',
+            'walkin_patient'
+        ).get(
             prescription_id=prescription_id,
             patient__user=request.user
         )
@@ -744,13 +893,17 @@ def download_prescription_pdf(request, prescription_id):
         messages.error(request, 'Prescription not found')
         return redirect('prescription_history_patient')
 
-    # ── Generate QR code ──────────────────────────────────
+    # FIX Bug 2: QR encodes full verify URL not just prescription_id
     qr_b64 = None
     try:
         import qrcode
         import io
         import base64
-        from PIL import Image
+
+        # Full URL so pharmacy can scan and open verify page directly
+        verify_url = request.build_absolute_uri(
+            f'/api/blockchain/get-prescription/{prescription_id}/'
+        )
 
         qr = qrcode.QRCode(
             version=1,
@@ -758,55 +911,69 @@ def download_prescription_pdf(request, prescription_id):
             box_size=6,
             border=2,
         )
-        qr.add_data(rx.prescription_id)
+        # FIX: was rx.prescription_id — now full verify URL
+        qr.add_data(verify_url)
         qr.make(fit=True)
 
-        qr_img    = qr.make_image(fill_color='#059669', back_color='white')
+        qr_img    = qr.make_image(
+            fill_color='#059669', back_color='white'
+        )
         qr_buffer = io.BytesIO()
         qr_img.save(qr_buffer, format='PNG')
         qr_buffer.seek(0)
-        qr_b64 = base64.b64encode(qr_buffer.getvalue()).decode('utf-8')
-        print(f'[PDF] QR generated successfully for {rx.prescription_id}')
+        qr_b64 = base64.b64encode(
+            qr_buffer.getvalue()
+        ).decode('utf-8')
+        print(
+            f'[PDF] QR generated for {rx.prescription_id} '
+            f'pointing to {verify_url}'
+        )
 
     except ImportError as e:
-        print(f'[PDF] QR library missing: {e} — run: pip install qrcode[pil]')
+        print(f'[PDF] QR library missing: {e}')
+        print('Run: pip install qrcode[pil]')
     except Exception as e:
         print(f'[PDF] QR generation failed: {e}')
 
-    # ── Render HTML ───────────────────────────────────────
+    # Render HTML template
     from django.template.loader import render_to_string
     html_content = render_to_string(
         'patient/prescription_pdf.html',
         {
-            'rx':     rx,
+            'rx'    : rx,
             'qr_b64': qr_b64,
         },
         request=request
     )
 
-    # ── Try WeasyPrint → PDF ──────────────────────────────
+    # Generate PDF with WeasyPrint
     try:
-        from weasyprint import HTML, CSS
+        from weasyprint import HTML
         pdf = HTML(
             string=html_content,
             base_url=request.build_absolute_uri('/')
         ).write_pdf()
 
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = (
-            f'attachment; filename="prescription-{rx.prescription_id}.pdf"'
+        response = HttpResponse(
+            pdf, content_type='application/pdf'
         )
-        print(f'[PDF] PDF generated successfully for {rx.prescription_id}')
+        response['Content-Disposition'] = (
+            f'attachment; '
+            f'filename="prescription-{rx.prescription_id}.pdf"'
+        )
+        print(
+            f'[PDF] Generated successfully '
+            f'for {rx.prescription_id}'
+        )
         return response
 
     except ImportError:
-        print('[PDF] WeasyPrint not installed — returning HTML. Run: pip install weasyprint')
-        # Fallback: return printable HTML page
+        print('[PDF] WeasyPrint not installed.')
+        print('Run: pip install weasyprint')
         return HttpResponse(html_content, content_type='text/html')
 
     except Exception as e:
         print(f'[PDF] WeasyPrint error: {e}')
-        # Fallback: return printable HTML page
         return HttpResponse(html_content, content_type='text/html')
 
 
@@ -816,7 +983,9 @@ def medical_history_patient(request):
         return redirect('dashboard')
     prescriptions = PrescriptionRecord.objects.filter(
         patient__user=request.user
-    ).select_related('doctor', 'doctor__user').order_by('-created_at')
+    ).select_related(
+        'doctor', 'doctor__user'
+    ).order_by('-created_at')
     return render(request, 'patient/medical_history.html', {
         'prescriptions': prescriptions
     })
@@ -837,9 +1006,9 @@ def my_doctors_patient(request):
             did = rx.doctor.id
             if did not in doctors:
                 doctors[did] = {
-                    'doctor':             rx.doctor,
+                    'doctor'            : rx.doctor,
                     'prescription_count': 0,
-                    'last_visit':         rx.created_at,
+                    'last_visit'        : rx.created_at,
                 }
             doctors[did]['prescription_count'] += 1
             if rx.created_at > doctors[did]['last_visit']:
@@ -856,13 +1025,19 @@ def patient_notifications(request):
     if not check_role(request, 'patient'):
         return redirect('dashboard')
     try:
-        recent_fills = PrescriptionRecord.objects.filter(
+        # FIX Bug 3: Show both new prescriptions AND filled
+        notifications = Notification.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:20]
+        recent_fills  = PrescriptionRecord.objects.filter(
             patient__user=request.user, is_filled=True
         ).order_by('-filled_at')[:20]
     except Exception:
-        recent_fills = []
+        notifications = []
+        recent_fills  = []
     return render(request, 'patient/notifications.html', {
-        'recent_fills': recent_fills
+        'notifications': notifications,
+        'recent_fills' : recent_fills,
     })
 
 
@@ -871,17 +1046,25 @@ def update_profile_patient(request):
     if not check_role(request, 'patient'):
         return redirect('dashboard')
     if request.method == 'POST':
-        request.user.first_name = request.POST.get('first_name', '').strip()
-        request.user.last_name  = request.POST.get('last_name', '').strip()
+        request.user.first_name = request.POST.get(
+            'first_name', ''
+        ).strip()
+        request.user.last_name  = request.POST.get(
+            'last_name', ''
+        ).strip()
         request.user.email      = request.POST.get('email', '').strip()
         request.user.save()
         profile       = request.user.profile
         profile.phone = request.POST.get('phone', '').strip()
         profile.save()
         try:
-            patient = request.user.patient
-            patient.blood_group = request.POST.get('blood_group', patient.blood_group)
-            patient.allergies   = request.POST.get('allergies', '').strip()
+            patient             = request.user.patient
+            patient.blood_group = request.POST.get(
+                'blood_group', patient.blood_group
+            )
+            patient.allergies   = request.POST.get(
+                'allergies', ''
+            ).strip()
             patient.save()
         except Exception:
             pass
@@ -903,11 +1086,12 @@ def pharmacy_dashboard(request):
             filled_by=pharmacy
         ).order_by('-filled_at')[:10]
         return render(request, 'pharmacy.html', {
-            'pharmacy':     pharmacy,
-            'today_count':  PrescriptionRecord.objects.filter(
-                filled_by=pharmacy, filled_at__date=today
+            'pharmacy'    : pharmacy,
+            'today_count' : PrescriptionRecord.objects.filter(
+                filled_by=pharmacy,
+                filled_at__date=today
             ).count(),
-            'week_count':   PrescriptionRecord.objects.filter(
+            'week_count'  : PrescriptionRecord.objects.filter(
                 filled_by=pharmacy,
                 filled_at__date__gte=today - timedelta(days=7)
             ).count(),
@@ -948,9 +1132,10 @@ def daily_report_pharmacy(request):
         today    = timezone.now().date()
         context  = {
             'today_count': PrescriptionRecord.objects.filter(
-                filled_by=pharmacy, filled_at__date=today
+                filled_by=pharmacy,
+                filled_at__date=today
             ).count(),
-            'week_count':  PrescriptionRecord.objects.filter(
+            'week_count' : PrescriptionRecord.objects.filter(
                 filled_by=pharmacy,
                 filled_at__date__gte=today - timedelta(days=7)
             ).count(),
@@ -958,9 +1143,14 @@ def daily_report_pharmacy(request):
                 filled_by=pharmacy,
                 filled_at__date__gte=today - timedelta(days=30)
             ).count(),
+            'total_filled': PrescriptionRecord.objects.filter(  # ✅ ADD THIS
+                filled_by=pharmacy, is_filled=True
+            ).count(),
         }
     except Exception:
-        context = {'today_count': 0, 'week_count': 0, 'month_count': 0}
+        context = {
+            'today_count': 0, 'week_count': 0, 'month_count': 0, 'total_filled': 0
+        }
     return render(request, 'pharmacy/daily_report.html', context)
 
 
@@ -975,7 +1165,8 @@ def pharmacy_analytics(request):
             filled_by=pharmacy, is_filled=True
         ).count()
         today_c  = PrescriptionRecord.objects.filter(
-            filled_by=pharmacy, filled_at__date=today
+            filled_by=pharmacy,
+            filled_at__date=today
         ).count()
         week_c   = PrescriptionRecord.objects.filter(
             filled_by=pharmacy,
@@ -986,16 +1177,25 @@ def pharmacy_analytics(request):
             filled_at__date__gte=today - timedelta(days=30)
         ).count()
         context  = {
-            'today_count': today_c, 'week_count': week_c,
-            'month_count': month_c, 'total_filled': total,
-            'today_rate':  round((today_c / total * 100) if total > 0 else 0, 1),
-            'week_rate':   round((week_c / total * 100) if total > 0 else 0, 1),
-            'month_rate':  round((month_c / total * 100) if total > 0 else 0, 1),
+            'today_count': today_c,
+            'week_count' : week_c,
+            'month_count': month_c,
+            'total_filled': total,
+            'today_rate' : round(
+                (today_c / total * 100) if total > 0 else 0, 1
+            ),
+            'week_rate'  : round(
+                (week_c / total * 100) if total > 0 else 0, 1
+            ),
+            'month_rate' : round(
+                (month_c / total * 100) if total > 0 else 0, 1
+            ),
         }
     except Exception:
         context = {
-            'today_count': 0, 'week_count': 0, 'month_count': 0,
-            'total_filled': 0, 'today_rate': 0, 'week_rate': 0, 'month_rate': 0
+            'today_count': 0, 'week_count': 0,
+            'month_count': 0, 'total_filled': 0,
+            'today_rate': 0, 'week_rate': 0, 'month_rate': 0
         }
     return render(request, 'pharmacy/analytics.html', context)
 
@@ -1004,9 +1204,10 @@ def pharmacy_analytics(request):
 def pharmacy_alerts(request):
     if not check_role(request, 'pharmacy'):
         return redirect('dashboard')
-    old_threshold = timezone.now() - timedelta(days=30)
+    old_threshold     = timezone.now() - timedelta(days=30)
     old_prescriptions = PrescriptionRecord.objects.filter(
-        is_filled=False, is_cancelled=False,
+        is_filled=False,
+        is_cancelled=False,
         created_at__lt=old_threshold
     )[:10]
     return render(request, 'pharmacy/alerts.html', {
@@ -1019,8 +1220,12 @@ def pharmacy_settings(request):
     if not check_role(request, 'pharmacy'):
         return redirect('dashboard')
     if request.method == 'POST':
-        request.user.first_name = request.POST.get('first_name', '').strip()
-        request.user.last_name  = request.POST.get('last_name', '').strip()
+        request.user.first_name = request.POST.get(
+            'first_name', ''
+        ).strip()
+        request.user.last_name  = request.POST.get(
+            'last_name', ''
+        ).strip()
         request.user.email      = request.POST.get('email', '').strip()
         request.user.save()
         profile       = request.user.profile
@@ -1028,7 +1233,7 @@ def pharmacy_settings(request):
         profile.save()
         try:
             pharmacy = request.user.pharmacy
-            pn = request.POST.get('pharmacy_name', '').strip()
+            pn       = request.POST.get('pharmacy_name', '').strip()
             if pn:
                 pharmacy.pharmacy_name = pn
             pharmacy.address = request.POST.get('address', '').strip()
@@ -1051,11 +1256,9 @@ def pharmacy_inventory(request):
     })
 
 
-# ==================== QR CODE IMAGE VIEW ====================
-
 @login_required
 def qr_code_image(request, prescription_id):
-    """Serves QR code as a PNG image — used by generate_qr.html"""
+    """Serves QR code as PNG — used by generate_qr.html"""
     try:
         rx = PrescriptionRecord.objects.get(
             prescription_id=prescription_id,
@@ -1068,18 +1271,24 @@ def qr_code_image(request, prescription_id):
     import qrcode
     import io
 
+    # ✅ FIX: encode only the prescription ID
+    # The pharmacy system looks up by ID, not by URL
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=6,
         border=2,
     )
-    qr.add_data(rx.prescription_id)
+    qr.add_data(prescription_id)   # ✅ was verify_url — now just ID
     qr.make(fit=True)
-    qr_img = qr.make_image(fill_color='#059669', back_color='white')
+    qr_img = qr.make_image(
+        fill_color='#059669', back_color='white'
+    )
 
     buffer = io.BytesIO()
     qr_img.save(buffer, format='PNG')
     buffer.seek(0)
 
-    return HttpResponse(buffer.getvalue(), content_type='image/png')
+    return HttpResponse(
+        buffer.getvalue(), content_type='image/png'
+    )

@@ -446,7 +446,34 @@ class PrescriptionRecord(models.Model):
             models.Index(fields=['is_cancelled']),
         ]
 
+# ==================== NOTIFICATION MODEL ====================
 
+class Notification(models.Model):
+    """
+    In-app notifications for patients.
+    Created automatically when doctor creates a prescription.
+    Patient sees bell icon with unread badge on their dashboard.
+    """
+    user       = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    message    = models.TextField()
+    is_read    = models.BooleanField(default=False)
+    link       = models.CharField(
+        max_length=255, blank=True, null=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering     = ['-created_at']
+        verbose_name = 'Notification'
+
+    def __str__(self):
+        return (
+            f'Notification → {self.user.username}: '
+            f'{self.message[:40]}'
+        )
 # ==================== SIGNALS ====================
 
 @receiver(post_save, sender=Doctor)

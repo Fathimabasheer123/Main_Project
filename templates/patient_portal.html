@@ -4,90 +4,191 @@
 {% block extra_css %}
 <style>
     .dashboard-container { display: flex; min-height: 100vh; }
+
     .sidebar {
         width: 260px;
         background: linear-gradient(180deg, #10b981, #059669);
         color: white; position: fixed; height: 100vh;
-        overflow-y: auto; z-index: 1000; display: flex; flex-direction: column;
+        overflow-y: auto; z-index: 1000;
+        display: flex; flex-direction: column;
     }
-    .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.2); }
-    .sidebar-title { font-size: 1.3rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
-    .sidebar-subtitle { font-size: 0.85rem; opacity: 0.85; margin-top: 0.3rem; }
-    .sidebar-menu { padding: 0.5rem 0; flex: 1; }
+    .sidebar-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    .sidebar-title {
+        font-size: 1.3rem; font-weight: 700; margin: 0;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .sidebar-subtitle {
+        font-size: 0.85rem; opacity: 0.85; margin-top: 0.3rem;
+    }
+    .sidebar-menu  { padding: 0.5rem 0; flex: 1; }
     .menu-item {
-        padding: 0.85rem 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.85rem 1.5rem;
+        display: flex; align-items: center; gap: 0.75rem;
         color: rgba(255,255,255,0.9); text-decoration: none;
-        border-left: 3px solid transparent; font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
+        border-left: 3px solid transparent;
+        font-size: 0.9rem; font-weight: 500; transition: all 0.2s;
     }
-    .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.15); color: white; border-left-color: white; }
-    .menu-item i { width: 20px; text-align: center; }
-    .sidebar-footer { padding: 1rem 0; border-top: 1px solid rgba(255,255,255,0.2); }
+    .menu-item:hover, .menu-item.active {
+        background: rgba(255,255,255,0.15);
+        color: white; border-left-color: white;
+    }
+    .menu-item i     { width: 20px; text-align: center; }
+    .sidebar-footer  {
+        padding: 1rem 0;
+        border-top: 1px solid rgba(255,255,255,0.2);
+    }
     .main-content { margin-left: 260px; flex: 1; padding: 1.5rem; }
+
     .top-bar {
-        background: white; padding: 1.2rem 1.5rem; border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem;
-        display: flex; justify-content: space-between; align-items: center;
+        background: white; padding: 1.2rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between;
+        align-items: center;
     }
-    .page-title { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .page-title {
+        font-size: 1.5rem; font-weight: 700;
+        color: #1e293b; margin: 0;
+    }
     .user-avatar {
         width: 40px; height: 40px; border-radius: 50%;
         background: linear-gradient(135deg, #10b981, #059669);
-        display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;
+        display: flex; align-items: center;
+        justify-content: center; color: white; font-weight: 700;
     }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem; margin-bottom: 1.5rem;
+    }
     .stat-card {
         background: white; padding: 1.2rem; border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex;
-        justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        display: flex; justify-content: space-between;
+        align-items: center; border: 1px solid #e2e8f0;
     }
-    .stat-label { font-size: 0.8rem; color: #64748b; }
-    .stat-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
-    .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
-    .icon-blue { background: #dbeafe; color: #3b82f6; }
-    .icon-green { background: #d1fae5; color: #10b981; }
+    .stat-label  { font-size: 0.8rem; color: #64748b; }
+    .stat-value  {
+        font-size: 1.8rem; font-weight: 700; color: #1e293b;
+    }
+    .stat-icon   {
+        width: 44px; height: 44px; border-radius: 10px;
+        display: flex; align-items: center;
+        justify-content: center; font-size: 1.3rem;
+    }
+    .icon-blue   { background: #dbeafe; color: #3b82f6; }
+    .icon-green  { background: #d1fae5; color: #10b981; }
     .icon-orange { background: #fed7aa; color: #f59e0b; }
-    .content-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; border: 1px solid #e2e8f0; }
-    .card-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; }
-    .rx-row { padding: 0.75rem; border-left: 3px solid #10b981; background: #f0fdf4; border-radius: 6px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
-    .rx-id { font-family: monospace; font-size: 0.85rem; color: #059669; }
+
+    .content-card {
+        background: white; padding: 1.5rem; border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-bottom: 1.5rem; border: 1px solid #e2e8f0;
+    }
+    .card-title {
+        font-size: 1rem; font-weight: 600; color: #1e293b;
+        margin-bottom: 1rem; padding-bottom: 0.75rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .rx-row {
+        padding: 0.75rem;
+        border-left: 3px solid #10b981;
+        background: #f0fdf4; border-radius: 6px;
+        margin-bottom: 0.5rem;
+        display: flex; justify-content: space-between;
+        align-items: center;
+    }
+    .rx-id   {
+        font-family: monospace; font-size: 0.85rem;
+        color: #059669; font-weight: 700;
+    }
     .rx-info { font-size: 0.85rem; color: #64748b; }
-    .badge-filled { background: #dbeafe; color: #1e40af; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; }
-    .badge-pending { background: #fef3c7; color: #92400e; padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.75rem; }
-    .btn-primary-custom { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+
+    .badge-filled {
+        background: #dbeafe; color: #1e40af;
+        padding: 0.3rem 0.7rem; border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .badge-pending {
+        background: #fef3c7; color: #92400e;
+        padding: 0.3rem 0.7rem; border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .badge-cancelled {
+        background: #fee2e2; color: #991b1b;
+        padding: 0.3rem 0.7rem; border-radius: 20px;
+        font-size: 0.75rem;
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white; border: none;
+        padding: 0.6rem 1.2rem; border-radius: 8px;
+        font-weight: 600; font-size: 0.9rem; cursor: pointer;
+    }
     .btn-primary-custom:hover { opacity: 0.9; color: white; }
-    .empty-msg { text-align: center; color: #94a3b8; padding: 2rem; }
-    .detail-box { padding: 1rem; border-radius: 8px; margin-top: 0.75rem; }
-    .detail-blue { background: #eff6ff; border-left: 3px solid #3b82f6; }
-    .detail-yellow { background: #fefce8; border-left: 3px solid #f59e0b; }
+
+    .empty-msg {
+        text-align: center; color: #94a3b8; padding: 2rem;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
 
-    <!-- Sidebar -->
+    <!-- ═══════════════════════════════════════
+         SIDEBAR
+    ═══════════════════════════════════════ -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title"><i class="bi bi-heart-pulse-fill"></i> MedChain</div>
-            <div class="sidebar-subtitle">{{ user.first_name }} {{ user.last_name }}</div>
+            <div class="sidebar-title">
+                <i class="bi bi-person"></i> MedChain
+            </div>
+            <div class="sidebar-subtitle">
+                {{ user.first_name }} {{ user.last_name }}
+            </div>
         </div>
+
         <div class="sidebar-menu">
-            <a href="{% url 'patient_dashboard' %}" class="menu-item active">
+            <a href="{% url 'patient_dashboard' %}"
+               class="menu-item active">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
-            <a href="{% url 'prescription_history_patient' %}" class="menu-item">
+            <a href="{% url 'prescription_history_patient' %}"
+               class="menu-item">
                 <i class="bi bi-clock-history"></i> My Prescriptions
             </a>
-            <a href="{% url 'medical_history_patient' %}" class="menu-item">
+            <a href="{% url 'medical_history_patient' %}"
+               class="menu-item">
                 <i class="bi bi-file-medical"></i> Medical History
             </a>
-            <a href="{% url 'my_doctors_patient' %}" class="menu-item">
+            <a href="{% url 'my_doctors_patient' %}"
+               class="menu-item">
                 <i class="bi bi-person-badge"></i> My Doctors
             </a>
-            <a href="{% url 'update_profile_patient' %}" class="menu-item">
+            <a href="{% url 'patient_notifications' %}"
+               class="menu-item">
+                <i class="bi bi-bell"></i> Notifications
+                {% if unread_count > 0 %}
+                <span class="badge bg-danger ms-auto"
+                      style="font-size:10px;">
+                    {{ unread_count }}
+                </span>
+                {% endif %}
+            </a>
+            <a href="{% url 'update_profile_patient' %}"
+               class="menu-item">
                 <i class="bi bi-gear-fill"></i> Settings
             </a>
         </div>
+
         <div class="sidebar-footer">
             <a href="{% url 'logout' %}" class="menu-item">
                 <i class="bi bi-box-arrow-right"></i> Logout
@@ -95,100 +196,277 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- ═══════════════════════════════════════
+         MAIN CONTENT
+    ═══════════════════════════════════════ -->
     <div class="main-content">
 
+        <!-- Top Bar — FIX Bug 3: Added bell icon -->
         <div class="top-bar">
             <div>
                 <div class="page-title">My Health Portal</div>
-                <div style="font-size:0.85rem;color:#64748b;">{{ "now"|date:"l, d M Y" }}</div>
+                <div style="font-size:0.85rem;color:#64748b;">
+                    {% now "l, d M Y" %}
+                </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <div class="user-avatar">{{ user.first_name.0 }}</div>
+
+            <div class="d-flex align-items-center gap-3">
+
+                <!-- BELL ICON with notification dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-link p-0 position-relative
+                                   border-0 text-dark"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            style="text-decoration:none;">
+
+                        <i class="bi bi-bell-fill fs-5 text-secondary"></i>
+
+                        {% if unread_count > 0 %}
+                        <span class="position-absolute top-0 start-100
+                                     translate-middle badge rounded-pill
+                                     bg-danger"
+                              style="font-size:9px; padding:3px 5px;">
+                            {{ unread_count }}
+                        </span>
+                        {% endif %}
+                    </button>
+
+                    <!-- Notification Dropdown -->
+                    <ul class="dropdown-menu dropdown-menu-end
+                               shadow-lg p-0"
+                        style="width:320px; max-height:380px;
+                               overflow-y:auto; border-radius:12px;">
+
+                        <!-- Header -->
+                        <li class="px-3 py-2 d-flex
+                                   justify-content-between
+                                   align-items-center border-bottom
+                                   bg-light"
+                            style="border-radius:12px 12px 0 0;">
+                            <strong style="font-size:0.9rem;">
+                                <i class="bi bi-bell"></i>
+                                Notifications
+                            </strong>
+                            {% if unread_count > 0 %}
+                            <a href="{% url 'mark_all_notifications_read' %}"
+                               class="text-success small
+                                      text-decoration-none">
+                                Mark all read
+                            </a>
+                            {% endif %}
+                        </li>
+
+                        <!-- Notification items -->
+                        {% for notif in notifications %}
+                        <li>
+                            <a href="{% url 'mark_notification_read' notif.id %}"
+                               class="dropdown-item py-2 px-3"
+                               style="{% if not notif.is_read %}
+                                          background:#f0fdf4;
+                                          font-weight:600;
+                                      {% endif %}
+                                      border-bottom:1px solid #f1f5f9;
+                                      white-space:normal;
+                                      font-size:0.83rem;">
+                                <div class="d-flex gap-2
+                                            align-items-start">
+                                    <i class="bi bi-file-earmark-medical-fill
+                                              text-success mt-1"
+                                       style="font-size:1rem;
+                                              flex-shrink:0;"></i>
+                                    <div>
+                                        <div>{{ notif.message }}</div>
+                                        <div class="text-muted"
+                                             style="font-size:0.75rem;
+                                                    margin-top:2px;">
+                                            {{ notif.created_at|timesince }}
+                                            ago
+                                        </div>
+                                    </div>
+                                    {% if not notif.is_read %}
+                                    <span class="ms-auto">
+                                        <i class="bi bi-circle-fill
+                                                  text-success"
+                                           style="font-size:7px;"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        </li>
+                        {% empty %}
+                        <li class="text-center text-muted py-4"
+                            style="font-size:0.85rem;">
+                            <i class="bi bi-bell-slash d-block mb-1"
+                               style="font-size:1.5rem;"></i>
+                            No notifications yet
+                        </li>
+                        {% endfor %}
+
+                    </ul>
+                </div>
+                <!-- END BELL ICON -->
+
+                <div class="user-avatar">
+                    {{ user.first_name.0 }}
+                </div>
             </div>
         </div>
 
-        <!-- Stats from DB -->
+        <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div>
                     <div class="stat-label">Total Prescriptions</div>
-                    <div class="stat-value">{{ total_count|default:"0" }}</div>
+                    <div class="stat-value">
+                        {{ total_count|default:"0" }}
+                    </div>
                 </div>
-                <div class="stat-icon icon-blue"><i class="bi bi-file-earmark-medical-fill"></i></div>
+                <div class="stat-icon icon-blue">
+                    <i class="bi bi-file-earmark-medical-fill"></i>
+                </div>
             </div>
             <div class="stat-card">
                 <div>
                     <div class="stat-label">Filled</div>
-                    <div class="stat-value">{{ filled_count|default:"0" }}</div>
+                    <div class="stat-value">
+                        {{ filled_count|default:"0" }}
+                    </div>
                 </div>
-                <div class="stat-icon icon-green"><i class="bi bi-check-circle-fill"></i></div>
+                <div class="stat-icon icon-green">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
             </div>
             <div class="stat-card">
                 <div>
                     <div class="stat-label">Pending</div>
-                    <div class="stat-value">{{ pending_count|default:"0" }}</div>
+                    <div class="stat-value">
+                        {{ pending_count|default:"0" }}
+                    </div>
                 </div>
-                <div class="stat-icon icon-orange"><i class="bi bi-hourglass-split"></i></div>
+                <div class="stat-icon icon-orange">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
             </div>
         </div>
 
         <!-- Search Prescription by ID -->
         <div class="content-card">
-            <div class="card-title"><i class="bi bi-search"></i> Lookup Prescription</div>
+            <div class="card-title">
+                <i class="bi bi-search"></i> Lookup Prescription
+            </div>
             <div class="row g-2">
                 <div class="col-md-9">
-                    <input type="text" class="form-control" id="searchId"
-                           placeholder="Enter Prescription ID (e.g., RX-ABC123...)">
+                    <input type="text" class="form-control"
+                           id="searchId"
+                           placeholder="Enter Prescription ID
+                                        (e.g., RX-ABC123...)">
                 </div>
                 <div class="col-md-3">
-                    <button class="btn btn-primary-custom w-100" onclick="lookupPrescription()">
+                    <button class="btn btn-primary-custom w-100"
+                            onclick="lookupPrescription()">
                         <i class="bi bi-search"></i> Search
                     </button>
                 </div>
             </div>
 
-            <div id="lookupLoading" class="text-center py-3" style="display:none;">
+            <div id="lookupLoading"
+                 class="text-center py-3"
+                 style="display:none;">
                 <div class="spinner-border text-success"></div>
-                <div class="mt-2 text-muted small">Fetching from blockchain...</div>
+                <div class="mt-2 text-muted small">
+                    Fetching from blockchain...
+                </div>
             </div>
 
-            <div id="lookupResult" style="display:none; margin-top:1rem;"></div>
+            <div id="lookupResult"
+                 style="display:none; margin-top:1rem;"></div>
         </div>
 
-        <!-- Prescription History from DB -->
+        <!-- Prescription History — FIX Bug 1: correct field names -->
         <div class="content-card">
-            <div class="card-title"><i class="bi bi-clock-history"></i> My Prescriptions</div>
-            {% if prescriptions %}
-                {% for rx in prescriptions %}
-                <div class="rx-row">
-                    <div>
-                        <div class="rx-id">{{ rx.prescription_id }}</div>
-                        <div class="rx-info">
-                            {{ rx.disease }} &bull;
-                            Dr. {% if rx.doctor %}{{ rx.doctor.user.get_full_name }}{% else %}Unknown{% endif %}
-                            &bull; {{ rx.created_at|date:"d M Y" }}
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        {% if rx.is_filled %}
-                            <span class="badge-filled">Filled</span>
+            <div class="card-title">
+                <i class="bi bi-clock-history"></i> My Prescriptions
+            </div>
+
+            {% for rx in prescriptions %}
+            <div class="rx-row">
+                <div style="flex:1;">
+                    <!-- FIX: correct field name prescription_id -->
+                    <div class="rx-id">{{ rx.prescription_id }}</div>
+
+                    <div class="rx-info" style="margin-top:3px;">
+                        <!-- FIX: correct field names -->
+                        <strong>{{ rx.disease }}</strong>
+                        &bull;
+                        {{ rx.drug }}
+                        &bull;
+                        Dr. {% if rx.doctor %}
+                            {{ rx.doctor.user.get_full_name }}
                         {% else %}
-                            <span class="badge-pending">Pending</span>
+                            Unknown
                         {% endif %}
-                        <button class="btn btn-sm btn-outline-success"
-                                onclick="showQR('{{ rx.prescription_id }}')">
-                            <i class="bi bi-qr-code"></i> QR
-                        </button>
+                        &bull;
+                        {{ rx.created_at|date:"d M Y" }}
+                    </div>
+
+                    <!-- FIX: show dosage, frequency, duration -->
+                    <div class="rx-info"
+                         style="margin-top:3px; font-size:0.78rem;">
+                        {% if rx.dosage %}
+                            Dosage: <strong>{{ rx.dosage }}</strong>
+                        {% endif %}
+                        {% if rx.frequency %}
+                            &nbsp;&bull;&nbsp;{{ rx.frequency }}
+                        {% endif %}
+                        {% if rx.duration %}
+                            &nbsp;&bull;&nbsp;{{ rx.duration }}
+                        {% endif %}
                     </div>
                 </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-msg">
-                    <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
-                    No prescriptions yet.
+
+                <div class="d-flex align-items-center gap-2
+                             flex-shrink-0 ms-2">
+                    <!-- FIX: correct status using is_filled,
+                              is_cancelled fields -->
+                    {% if rx.is_filled %}
+                        <span class="badge-filled">
+                            <i class="bi bi-check-circle"></i> Filled
+                        </span>
+                    {% elif rx.is_cancelled %}
+                        <span class="badge-cancelled">
+                            <i class="bi bi-x-circle"></i> Cancelled
+                        </span>
+                    {% else %}
+                        <span class="badge-pending">
+                            <i class="bi bi-hourglass-split"></i>
+                            Pending
+                        </span>
+                    {% endif %}
+
+                    <button class="btn btn-sm btn-outline-success"
+                            onclick="showQR(
+                                '{{ rx.prescription_id }}'
+                            )">
+                        <i class="bi bi-qr-code"></i> QR
+                    </button>
+
+                    <!-- FIX Bug 2: Download PDF button -->
+                    <a href="{% url 'download_prescription_pdf' rx.prescription_id %}"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download"></i> PDF
+                    </a>
                 </div>
-            {% endif %}
+            </div>
+            {% empty %}
+            <div class="empty-msg">
+                <i class="bi bi-inbox"
+                   style="font-size:2rem;display:block;
+                          margin-bottom:0.5rem;"></i>
+                No prescriptions yet.
+            </div>
+            {% endfor %}
         </div>
 
     </div>
@@ -198,55 +476,95 @@
 <div class="modal fade" id="qrModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
         <div class="modal-content">
-            <div class="modal-header" style="background:linear-gradient(135deg,#10b981,#059669);color:white;">
-                <h6 class="modal-title"><i class="bi bi-qr-code"></i> Prescription QR</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <div class="modal-header"
+                 style="background:linear-gradient(135deg,#10b981,#059669);color:white;">
+                <h6 class="modal-title">
+                    <i class="bi bi-qr-code"></i> Prescription QR
+                </h6>
+                <button type="button" class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
                 <p class="text-muted small mb-2">Show this to the pharmacy</p>
-                <div id="qrDisplay" class="p-3 bg-light rounded"
-                     style="font-family:monospace;font-size:0.85rem;word-break:break-all;border:2px dashed #10b981;">
+
+                <!-- ✅ ADD THIS: actual QR image -->
+                <div style="display:inline-block;padding:1rem;
+                            border:3px solid #10b981;border-radius:12px;">
+                    <img id="qrImage" src="" alt="QR Code"
+                         width="200" height="200" style="display:block;">
+                </div>
+
+                <!-- prescription ID text below -->
+                <div id="qrDisplay"
+                     style="font-family:monospace;font-size:0.9rem;
+                            color:#059669;background:#f0fdf4;
+                            border:1px solid #bbf7d0;border-radius:8px;
+                            padding:0.5rem 1rem;display:inline-block;
+                            margin-top:0.75rem;word-break:break-all;">
                 </div>
                 <p class="text-muted small mt-2">Prescription ID</p>
             </div>
         </div>
     </div>
 </div>
-
 <script>
 async function lookupPrescription() {
     const rxId = document.getElementById('searchId').value.trim();
-    if (!rxId) { alert('Enter a Prescription ID'); return; }
+    if (!rxId) {
+        alert('Enter a Prescription ID');
+        return;
+    }
 
     document.getElementById('lookupLoading').style.display = 'block';
-    document.getElementById('lookupResult').style.display = 'none';
+    document.getElementById('lookupResult').style.display  = 'none';
 
     try {
-        const res = await fetch(`/api/blockchain/get-prescription/${rxId}/`);
+        const res  = await fetch(
+            `/api/blockchain/get-prescription/${rxId}/`
+        );
         const data = await res.json();
         document.getElementById('lookupLoading').style.display = 'none';
 
-        const div = document.getElementById('lookupResult');
+        const div      = document.getElementById('lookupResult');
         div.style.display = 'block';
 
         if (data.success) {
-            const rx = data.prescription;
-            const date = new Date(rx.timestamp * 1000).toLocaleDateString();
+            const rx   = data.prescription;
+            const date = new Date(
+                rx.timestamp * 1000
+            ).toLocaleDateString();
             div.innerHTML = `
-                <div style="background:#f0fdf4;padding:1rem;border-radius:8px;border-left:3px solid #10b981;">
-                    <strong style="color:#065f46;">✅ Found on Blockchain</strong><br><br>
+                <div style="background:#f0fdf4;padding:1rem;
+                            border-radius:8px;
+                            border-left:3px solid #10b981;">
+                    <strong style="color:#065f46;">
+                        ✅ Found on Blockchain
+                    </strong><br><br>
                     <small style="color:#64748b;">
-                        <strong>ID:</strong> <code>${rx.id}</code><br>
+                        <strong>ID:</strong>
+                        <code>${rx.id}</code><br>
                         <strong>Issued:</strong> ${date}<br>
-                        <strong>Status:</strong> ${rx.is_filled ? '✅ Dispensed' : '⏳ Pending'}<br>
-                        <strong>Active:</strong> ${rx.is_active ? 'Yes' : 'No'}
+                        <strong>Status:</strong>
+                        ${rx.is_filled
+                            ? '✅ Dispensed'
+                            : '⏳ Pending'
+                        }<br>
+                        <strong>Active:</strong>
+                        ${rx.is_active ? 'Yes' : 'No'}
                     </small>
                 </div>`;
         } else {
             div.innerHTML = `
-                <div style="background:#fef2f2;padding:1rem;border-radius:8px;border-left:3px solid #ef4444;">
-                    <strong style="color:#991b1b;">❌ Not Found</strong><br>
-                    <small>${data.error || 'Prescription not found on blockchain'}</small>
+                <div style="background:#fef2f2;padding:1rem;
+                            border-radius:8px;
+                            border-left:3px solid #ef4444;">
+                    <strong style="color:#991b1b;">
+                        ❌ Not Found
+                    </strong><br>
+                    <small>
+                        ${data.error ||
+                          'Prescription not found on blockchain'}
+                    </small>
                 </div>`;
         }
     } catch (err) {
@@ -255,8 +573,10 @@ async function lookupPrescription() {
     }
 }
 
+// ✅ Replace the existing showQR function
 function showQR(prescriptionId) {
     document.getElementById('qrDisplay').textContent = prescriptionId;
+    document.getElementById('qrImage').src = `/patient/qr-image/${prescriptionId}/`;
     new bootstrap.Modal(document.getElementById('qrModal')).show();
 }
 </script>

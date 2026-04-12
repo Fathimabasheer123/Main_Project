@@ -46,8 +46,8 @@
     .stat-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
     .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
     .icon-orange { background: #fed7aa; color: #f59e0b; }
-    .icon-green { background: #d1fae5; color: #10b981; }
-    .icon-blue { background: #dbeafe; color: #3b82f6; }
+    .icon-green  { background: #d1fae5; color: #10b981; }
+    .icon-blue   { background: #dbeafe; color: #3b82f6; }
     .content-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1.5rem; border: 1px solid #e2e8f0; }
     .card-title { font-size: 1rem; font-weight: 600; color: #1e293b; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; }
     .btn-primary-custom {
@@ -56,16 +56,33 @@
         border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer;
     }
     .btn-primary-custom:hover { opacity: 0.9; color: white; }
-    .result-box { padding: 1rem; border-radius: 8px; margin-top: 1rem; }
-    .result-valid { background: #d1fae5; border-left: 4px solid #10b981; }
-    .result-invalid { background: #fecaca; border-left: 4px solid #ef4444; }
+    .result-box    { padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+    .result-valid  { background: #d1fae5; border-left: 4px solid #10b981; }
+    .result-invalid{ background: #fecaca; border-left: 4px solid #ef4444; }
     .result-filled { background: #fef3c7; border-left: 4px solid #f59e0b; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
-    .info-item { background: #f8fafc; padding: 0.75rem; border-radius: 8px; }
+
+    /* TAMPER alert */
+    .result-tamper {
+        background: #fee2e2;
+        border-left: 6px solid #dc2626;
+        border-radius: 8px;
+        padding: 1.2rem;
+        margin-top: 1rem;
+    }
+    .tamper-title { font-size: 1.1rem; font-weight: 700; color: #991b1b; margin-bottom: 0.4rem; }
+    .tamper-body  { font-size: 0.9rem; color: #7f1d1d; }
+
+    .info-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+    .info-item  { background: #f8fafc; padding: 0.75rem; border-radius: 8px; }
     .info-label { font-size: 0.75rem; color: #64748b; }
     .info-value { font-weight: 600; color: #1e293b; font-size: 0.9rem; word-break: break-all; }
-    .empty-msg { text-align: center; color: #94a3b8; padding: 2rem; }
-    .history-row { padding: 0.75rem; border-left: 3px solid #f59e0b; background: #fffbeb; border-radius: 6px; margin-bottom: 0.5rem; }
+    .empty-msg  { text-align: center; color: #94a3b8; padding: 2rem; }
+    .history-row{ padding: 0.75rem; border-left: 3px solid #f59e0b; background: #fffbeb; border-radius: 6px; margin-bottom: 0.5rem; }
+
+    /* QR scan area */
+    .scan-area { display: none; margin-top: 1rem; border: 2px dashed #f59e0b; border-radius: 10px; padding: 0.75rem; background: #fffbeb; }
+    .scan-area video { width: 100%; border-radius: 8px; max-height: 260px; background: #000; }
+    .scan-hint { font-size: 0.82rem; color: #92400e; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
 </style>
 {% endblock %}
 
@@ -75,7 +92,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title"><i class="bi bi-hospital-fill"></i> MedChain</div>
+            <div class="sidebar-title"><i class="bi bi-capsule"></i> MedChain</div>
             <div class="sidebar-subtitle">{{ user.first_name }} {{ user.last_name }}</div>
         </div>
         <div class="sidebar-menu">
@@ -88,9 +105,9 @@
             <a href="{% url 'daily_report_pharmacy' %}" class="menu-item">
                 <i class="bi bi-file-earmark-bar-graph"></i> Daily Report
             </a>
-            <a href="{% url 'pharmacy_analytics' %}" class="menu-item">
+            <!-- <a href="{% url 'pharmacy_analytics' %}" class="menu-item">
                 <i class="bi bi-graph-up"></i> Analytics
-            </a>
+            </a> -->
             <a href="{% url 'pharmacy_settings' %}" class="menu-item">
                 <i class="bi bi-gear-fill"></i> Settings
             </a>
@@ -115,7 +132,7 @@
             </div>
         </div>
 
-        <!-- Stats — real data from views.py -->
+        <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div>
@@ -146,16 +163,40 @@
                 <i class="bi bi-qr-code-scan"></i> Verify & Dispense Prescription
             </div>
 
+            <!-- Existing row — UNCHANGED -->
             <div class="row g-2">
                 <div class="col-md-9">
                     <input type="text" class="form-control form-control-lg"
-                           id="prescriptionId" placeholder="Enter Prescription ID (e.g., RX-ABC123...)">
+                           id="prescriptionId"
+                           placeholder="Enter Prescription ID (e.g., RX-ABC123...)">
                 </div>
                 <div class="col-md-3">
-                    <button class="btn btn-primary-custom w-100 btn-lg" onclick="verifyPrescription()">
+                    <button class="btn btn-primary-custom w-100 btn-lg"
+                            onclick="verifyPrescription()">
                         <i class="bi bi-search"></i> Verify
                     </button>
                 </div>
+            </div>
+
+            <!-- Scan QR button (NEW) -->
+            <div style="margin-top:0.75rem;">
+                <button class="btn btn-outline-warning btn-sm"
+                        onclick="startScan()" id="scanBtn">
+                    <i class="bi bi-qr-code-scan"></i> Scan QR Instead
+                </button>
+            </div>
+
+            <!-- Camera feed (NEW) -->
+            <div class="scan-area" id="scanArea">
+                <video id="camFeed" playsinline autoplay muted></video>
+                <div class="scan-hint">
+                    <i class="bi bi-camera"></i>
+                    Point camera at the QR code — it will verify automatically.
+                </div>
+                <button class="btn btn-sm btn-outline-secondary mt-2"
+                        onclick="stopScan()">
+                    <i class="bi bi-x-circle"></i> Cancel Scan
+                </button>
             </div>
 
             <!-- Loading -->
@@ -167,7 +208,7 @@
             <!-- Result -->
             <div id="resultDiv" style="display:none;"></div>
 
-            <!-- Dispense Button — shown only when valid -->
+            <!-- Dispense Button -->
             <div id="dispenseBtn" style="display:none; margin-top:1rem;">
                 <button class="btn btn-success btn-lg" onclick="dispense()">
                     <i class="bi bi-capsule-pill"></i> Confirm & Dispense
@@ -177,17 +218,21 @@
                 </span>
             </div>
 
-            <!-- Dispense Result -->
+            <!-- Dispense / Tamper Result -->
             <div id="dispenseResult" style="display:none; margin-top:1rem;"></div>
         </div>
 
         <!-- Recent History -->
         <div class="content-card">
-            <div class="card-title"><i class="bi bi-clock-history"></i> Recent Dispensed</div>
+            <div class="card-title">
+                <i class="bi bi-clock-history"></i> Recent Dispensed
+            </div>
             {% if prescriptions %}
                 {% for rx in prescriptions %}
                 <div class="history-row">
-                    <div style="font-family:monospace;font-size:0.85rem;color:#d97706;">{{ rx.prescription_id }}</div>
+                    <div style="font-family:monospace;font-size:0.85rem;color:#d97706;">
+                        {{ rx.prescription_id }}
+                    </div>
                     <div style="font-size:0.85rem;color:#64748b;">
                         {{ rx.disease }} &bull; {{ rx.filled_at|date:"d M Y, H:i" }}
                     </div>
@@ -195,7 +240,8 @@
                 {% endfor %}
             {% else %}
                 <div class="empty-msg">
-                    <i class="bi bi-inbox" style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
+                    <i class="bi bi-inbox"
+                       style="font-size:2rem;display:block;margin-bottom:0.5rem;"></i>
                     No dispensing history yet.
                 </div>
             {% endif %}
@@ -203,6 +249,8 @@
 
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <script>
 let verifiedId = null;
@@ -212,13 +260,48 @@ function getCsrfToken() {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
+/* detect tamper keywords in any error string */
+function isTamperError(msg) {
+    if (!msg) return false;
+    const m = msg.toLowerCase();
+    return m.includes('tamper') ||
+           m.includes('modified') ||
+           m.includes('mismatch') ||
+           m.includes('hash') ||
+           m.includes('integrity') ||
+           m.includes('altered');
+}
+
+/* show big red tamper alert */
+function showTamper() {
+    document.getElementById('dispenseBtn').style.display = 'none';
+    verifiedId = null;
+
+    const dispenseDiv = document.getElementById('dispenseResult');
+    dispenseDiv.style.display = 'block';
+    dispenseDiv.className     = '';
+    dispenseDiv.innerHTML     = `
+        <div class="result-tamper">
+            <div class="tamper-title">🚨 TAMPER DETECTED</div>
+            <div class="tamper-body">
+                Prescription data has been modified after blockchain storage.<br>
+                The current data does not match the stored cryptographic hash.<br>
+                <strong>Dispensing is blocked.</strong>
+            </div>
+        </div>`;
+
+    showResult('invalid',
+        '🚨 TAMPER DETECTED: Prescription data has been modified. Cannot dispense.');
+}
+
+/* ── VERIFY ── */
 async function verifyPrescription() {
     const rxId = document.getElementById('prescriptionId').value.trim();
     if (!rxId) { alert('Enter a Prescription ID'); return; }
 
-    document.getElementById('loadingDiv').style.display   = 'block';
-    document.getElementById('resultDiv').style.display    = 'none';
-    document.getElementById('dispenseBtn').style.display  = 'none';
+    document.getElementById('loadingDiv').style.display     = 'block';
+    document.getElementById('resultDiv').style.display      = 'none';
+    document.getElementById('dispenseBtn').style.display    = 'none';
     document.getElementById('dispenseResult').style.display = 'none';
     verifiedId = null;
 
@@ -232,12 +315,9 @@ async function verifyPrescription() {
             return;
         }
 
-        // FIX — use db_data for medical info
-        const db    = data.db_data;
+        const db      = data.db_data;
         const onChain = data.blockchain_available;
-        const bc    = data.prescription;
 
-        // Source badge
         const sourceBadge = onChain
             ? '<span style="background:#d1fae5;color:#065f46;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:600;">🔗 Blockchain Verified</span>'
             : '<span style="background:#fef3c7;color:#92400e;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:600;">📋 Database</span>';
@@ -250,12 +330,16 @@ async function verifyPrescription() {
         if (db.is_filled) {
             showResult('filled',
                 `⚠️ Already dispensed — cannot fill again<br>
-                 <small>Dispensed on: ${db.filled_at || 'N/A'}</small>`
-            );
+                 <small>Dispensed on: ${db.filled_at || 'N/A'}</small>`);
             return;
         }
 
-        // Valid — show details
+        /* check if backend flagged tamper during verify */
+        if (data.tampered === true || isTamperError(data.error)) {
+            showTamper();
+            return;
+        }
+
         showResult('valid', `
             <div style="display:flex;justify-content:space-between;
                         align-items:center;margin-bottom:0.75rem;">
@@ -265,8 +349,8 @@ async function verifyPrescription() {
             <div class="info-grid">
                 <div class="info-item">
                     <div class="info-label">Prescription ID</div>
-                    <div class="info-value" style="font-family:monospace;
-                         font-size:0.8rem;">${db.prescription_id}</div>
+                    <div class="info-value" style="font-family:monospace;font-size:0.8rem;">
+                        ${db.prescription_id}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">Patient</div>
@@ -318,32 +402,25 @@ async function verifyPrescription() {
 
 function showResult(type, html) {
     const div     = document.getElementById('resultDiv');
-    const classes = {
-        valid:   'result-valid',
-        invalid: 'result-invalid',
-        filled:  'result-filled'
-    };
-    div.className    = 'result-box ' + classes[type];
-    div.innerHTML    = html;
+    const classes = { valid:'result-valid', invalid:'result-invalid', filled:'result-filled' };
+    div.className     = 'result-box ' + classes[type];
+    div.innerHTML     = html;
     div.style.display = 'block';
 }
 
+/* ── DISPENSE ── */
 async function dispense() {
     if (!verifiedId) return;
 
     const btn = document.querySelector('#dispenseBtn button');
     btn.disabled  = true;
-    btn.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
 
     try {
         const res = await fetch('/api/blockchain/fill-prescription/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken':  getCsrfToken()
-            },
-            body: JSON.stringify({ prescription_id: verifiedId })
+            method:  'POST',
+            headers: { 'Content-Type':'application/json', 'X-CSRFToken': getCsrfToken() },
+            body:    JSON.stringify({ prescription_id: verifiedId })
         });
         const result = await res.json();
 
@@ -353,24 +430,84 @@ async function dispense() {
         if (result.success) {
             dispenseDiv.className = 'result-box result-valid';
             const bcMsg = result.blockchain_confirmed
-            ? `<br><small style="font-family:monospace;">TX: ${result.transaction_hash}<br>Block: ${result.block_number}</small>`
-            : `<br><small style="color:#92400e;">⚠️ Saved to database (blockchain offline)</small>`;
+                ? `<br><small style="font-family:monospace;">TX: ${result.transaction_hash}<br>Block: ${result.block_number}</small>`
+                : `<br><small style="color:#92400e;">⚠️ Saved to database (blockchain offline)</small>`;
             dispenseDiv.innerHTML = `✅ Dispensed successfully! ${bcMsg}`;
             document.getElementById('dispenseBtn').style.display = 'none';
             showResult('filled', '✅ Prescription has been dispensed.');
             setTimeout(() => location.reload(), 3000);
 
         } else {
-            dispenseDiv.className = 'result-box result-invalid';
-            dispenseDiv.innerHTML = '❌ Error: ' + result.error;
+            /* KEY FIX — check tamper in dispense error */
+            const errMsg = result.error || '';
+            if (isTamperError(errMsg)) {
+                showTamper();
+            } else {
+                dispenseDiv.className = 'result-box result-invalid';
+                dispenseDiv.innerHTML = '❌ Error: ' + errMsg;
+            }
         }
+
     } catch (err) {
         alert('Network error: ' + err.message);
     } finally {
         btn.disabled  = false;
-        btn.innerHTML =
-            '<i class="bi bi-capsule-pill"></i> Confirm & Dispense';
+        btn.innerHTML = '<i class="bi bi-capsule-pill"></i> Confirm & Dispense';
     }
+}
+
+/* ── QR SCAN ── */
+let scanStream = null;
+
+function startScan() {
+    document.getElementById('scanArea').style.display = 'block';
+    document.getElementById('scanBtn').style.display  = 'none';
+
+    const video  = document.getElementById('camFeed');
+    const canvas = document.createElement('canvas');
+    const ctx    = canvas.getContext('2d');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+            scanStream      = stream;
+            video.srcObject = stream;
+            video.play();
+
+            const loop = () => {
+                if (!scanStream) return;
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width  = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0);
+                    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const qr  = jsQR(img.data, img.width, img.height);
+                    if (qr) {
+                        stopScan();
+                        const rxId = qr.data
+                            .split('/prescription/').pop()
+                            .replace(/\//g, '');
+                        document.getElementById('prescriptionId').value = rxId;
+                        verifyPrescription();
+                        return;
+                    }
+                }
+                requestAnimationFrame(loop);
+            };
+            requestAnimationFrame(loop);
+        })
+        .catch(err => {
+            alert('Camera not available: ' + err.message);
+            stopScan();
+        });
+}
+
+function stopScan() {
+    if (scanStream) {
+        scanStream.getTracks().forEach(t => t.stop());
+        scanStream = null;
+    }
+    document.getElementById('scanArea').style.display = 'none';
+    document.getElementById('scanBtn').style.display  = 'inline-block';
 }
 </script>
 {% endblock %}

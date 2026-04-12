@@ -38,38 +38,38 @@ def require_role(role):
 
 
 # ==================== HASH HELPER ====================
-# SINGLE definition of what fields go into the hash.
-# Used by store, verify AND fill — must ALWAYS be identical.
 
 def _build_hash_data(prescription_id, disease, drug,
                      dosage, frequency, duration,
                      instructions, adverse_effects):
     """
     Returns the dict that gets hashed.
-    ⚠️  DO NOT add created_at or any timestamp here —
-        timestamps differ between creation and verification.
+    DO NOT add created_at or any timestamp here —
+    timestamps differ between creation and verification.
     """
     return {
         'prescription_id': str(prescription_id).strip(),
-        'disease':         str(disease).strip(),
-        'drug':            str(drug).strip(),
-        'dosage':          str(dosage or '').strip(),
-        'frequency':       str(frequency or '').strip(),
-        'duration':        str(duration or '').strip(),
-        'instructions':    str(instructions or '').strip(),
+        'disease'        : str(disease).strip(),
+        'drug'           : str(drug).strip(),
+        'dosage'         : str(dosage or '').strip(),
+        'frequency'      : str(frequency or '').strip(),
+        'duration'       : str(duration or '').strip(),
+        'instructions'   : str(instructions or '').strip(),
         'adverse_effects': str(adverse_effects or '').strip(),
     }
 
 
 # ==================== PATIENT RESOLVER ====================
 
-def _resolve_patient_and_walkin(patient_address, walkin_patient_id=None):
+def _resolve_patient_and_walkin(
+    patient_address, walkin_patient_id=None
+):
     """
     Returns (patient_obj, walkin_obj).
     Exactly one will be non-None when a match is found.
 
     Resolution order:
-      1. Explicit walkin_patient_id from the form  ← highest priority
+      1. Explicit walkin_patient_id from form (highest priority)
       2. Wallet address matches a registered Patient
       3. Wallet address matches a WalkInPatient
     """
@@ -78,25 +78,31 @@ def _resolve_patient_and_walkin(patient_address, walkin_patient_id=None):
     patient = None
     walkin  = None
 
-    # 1. Explicit walk-in ID supplied by the doctor dashboard form
+    # 1. Explicit walk-in ID supplied by doctor dashboard
     if walkin_patient_id:
         try:
-            walkin = WalkInPatient.objects.get(patient_id=walkin_patient_id)
+            walkin = WalkInPatient.objects.get(
+                patient_id=walkin_patient_id
+            )
             return patient, walkin
         except WalkInPatient.DoesNotExist:
             pass
 
-    # 2. Try to match wallet address → registered Patient
+    # 2. Try wallet address → registered Patient
     try:
-        profile = UserProfile.objects.get(ethereum_address=patient_address)
+        profile = UserProfile.objects.get(
+            ethereum_address=patient_address
+        )
         patient = profile.user.patient
         return patient, walkin
     except Exception:
         pass
 
-    # 3. Try to match wallet address → WalkInPatient
+    # 3. Try wallet address → WalkInPatient
     try:
-        walkin = WalkInPatient.objects.get(ethereum_address=patient_address)
+        walkin = WalkInPatient.objects.get(
+            ethereum_address=patient_address
+        )
     except WalkInPatient.DoesNotExist:
         pass
 
@@ -110,22 +116,24 @@ def _resolve_patient_and_walkin(patient_address, walkin_patient_id=None):
 @require_http_methods(["POST"])
 def store_prescription_blockchain(request):
     try:
-        data             = json.loads(request.body)
-        prescription_id  = data.get('prescription_id', '').strip()
-        patient_address  = data.get('patient_address', '').strip()
-        disease          = data.get('disease', '').strip()
-        drug             = data.get('drug', '').strip()
-        dosage           = data.get('dosage', '').strip()
-        frequency        = data.get('frequency', '').strip()
-        duration         = data.get('duration', '').strip()
-        instructions     = data.get('instructions', '').strip()
-        adverse_effects  = data.get('adverse_effects', 'None noted').strip()
-        # ✅ Walk-in patient ID — passed by doctor dashboard when patient
-        #    was looked up by P-XXXXX and type == 'walkin'
+        data              = json.loads(request.body)
+        prescription_id   = data.get('prescription_id', '').strip()
+        patient_address   = data.get('patient_address', '').strip()
+        disease           = data.get('disease', '').strip()
+        drug              = data.get('drug', '').strip()
+        dosage            = data.get('dosage', '').strip()
+        frequency         = data.get('frequency', '').strip()
+        duration          = data.get('duration', '').strip()
+        instructions      = data.get('instructions', '').strip()
+        adverse_effects   = data.get(
+            'adverse_effects', 'None noted'
+        ).strip()
         walkin_patient_id = data.get('walkin_patient_id', None)
 
-        # ── Validate required fields ──────────────────────────
-        if not all([prescription_id, patient_address, disease, drug]):
+        # Validate required fields
+        if not all([
+            prescription_id, patient_address, disease, drug
+        ]):
             return JsonResponse({
                 'success': False,
                 'error':   'prescription_id, patient_address, '
@@ -142,7 +150,7 @@ def store_prescription_blockchain(request):
         from django.utils import timezone
         from datetime import timedelta
 
-        # ── Check doctor ──────────────────────────────────────
+        # Check doctor
         try:
             doctor = request.user.doctor
         except Exception:
@@ -163,7 +171,7 @@ def store_prescription_blockchain(request):
                 'error':   'Your account has been rejected by admin.'
             }, status=403)
 
-        # ── Check wallet ──────────────────────────────────────
+        # Check wallet
         doctor_wallet = getattr(
             request.user.profile, 'ethereum_address', ''
         ) or ''
@@ -174,9 +182,11 @@ def store_prescription_blockchain(request):
                            'Contact admin to assign one.'
             }, status=400)
 
-        # ── Blockchain manager ────────────────────────────────
+        # Blockchain manager
         try:
-            from apps.blockchain.web3_manager import get_blockchain_manager
+            from apps.blockchain.web3_manager import (
+                get_blockchain_manager
+            )
             manager = get_blockchain_manager()
         except Exception as e:
             return JsonResponse({
@@ -185,7 +195,7 @@ def store_prescription_blockchain(request):
                            'Please start Ganache and try again.'
             }, status=503)
 
-        # ── Build hash — NO created_at ────────────────────────
+        # Build hash — NO created_at
         hash_data = _build_hash_data(
             prescription_id, disease, drug,
             dosage, frequency, duration,
@@ -196,12 +206,12 @@ def store_prescription_blockchain(request):
         print(f'[STORE] hash_data : {hash_data}')
         print(f'[STORE] data_hash : {data_hash.hex()}')
 
-        # ── Blockchain FIRST ──────────────────────────────────
+        # Blockchain FIRST
         bc_result = manager.create_prescription(
-            prescription_id=prescription_id,
-            patient_address=patient_address,
-            data_hash=data_hash,
-            ipfs_hash=''
+            prescription_id = prescription_id,
+            patient_address = patient_address,
+            data_hash       = data_hash,
+            ipfs_hash       = ''
         )
 
         if not bc_result['success']:
@@ -210,19 +220,17 @@ def store_prescription_blockchain(request):
                 'error':   f'Blockchain error: {bc_result["error"]}'
             }, status=400)
 
-        # ── Resolve patient / walk-in ─────────────────────────
-        # Works for both registered patients and walk-in patients.
-        # walkin_patient_id is the P-XXXXX passed by the new dashboard.
+        # Resolve patient / walk-in
         patient, walkin = _resolve_patient_and_walkin(
             patient_address, walkin_patient_id
         )
 
-        # ── DB save after blockchain confirms ─────────────────
+        # DB save after blockchain confirms
         PrescriptionRecord.objects.create(
             prescription_id     = prescription_id,
             doctor              = doctor,
-            patient             = patient,       # registered Patient or None
-            walkin_patient      = walkin,        # WalkInPatient or None
+            patient             = patient,
+            walkin_patient      = walkin,
             disease             = disease,
             drug                = drug,
             dosage              = dosage,
@@ -239,13 +247,46 @@ def store_prescription_blockchain(request):
             expiry_date         = timezone.now() + timedelta(days=30)
         )
 
+        # FIX Bug 3: Send notification to registered patient
+        # only if they have a Django user account
+        if patient and hasattr(patient, 'user') and patient.user:
+            try:
+                from apps.prescriptions.models import Notification
+                doctor_name = (
+                    doctor.user.get_full_name() or
+                    doctor.user.username
+                )
+                Notification.objects.create(
+                    user    = patient.user,
+                    message = (
+                        f'New prescription created by '
+                        f'Dr. {doctor_name}. '
+                        f'Prescription ID: {prescription_id}. '
+                        f'Download your PDF from the patient portal.'
+                    ),
+                    link    = '/dashboard/patient/',
+                    is_read = False,
+                )
+                print(
+                    f'[NOTIFY] Notification sent to '
+                    f'{patient.user.username} for '
+                    f'{prescription_id}'
+                )
+            except Exception as notify_err:
+                # Never block prescription creation
+                # due to notification failure
+                print(
+                    f'[NOTIFY] Failed to send notification: '
+                    f'{notify_err}'
+                )
+
         return JsonResponse({
-            'success':          True,
-            'prescription_id':  prescription_id,
+            'success'         : True,
+            'prescription_id' : prescription_id,
             'transaction_hash': bc_result['transaction_hash'],
-            'block_number':     bc_result['block_number'],
-            'data_hash':        data_hash.hex(),
-            'message':          'Prescription stored on blockchain ✅'
+            'block_number'    : bc_result['block_number'],
+            'data_hash'       : data_hash.hex(),
+            'message'         : 'Prescription stored on blockchain ✅'
         })
 
     except Exception as e:
@@ -264,7 +305,7 @@ def get_prescription_blockchain(request, prescription_id):
     try:
         from apps.prescriptions.models import PrescriptionRecord
 
-        # ── Get DB record ─────────────────────────────────────
+        # Get DB record
         try:
             rx = PrescriptionRecord.objects.get(
                 prescription_id=prescription_id
@@ -282,48 +323,47 @@ def get_prescription_blockchain(request, prescription_id):
                 'source':  'unverified'
             }, status=400)
 
-        # ✅ patient_name works for both registered and walk-in patients
-        #    via the property defined in models.py
         db_data = {
-            'prescription_id':  rx.prescription_id,
-            'disease':          rx.disease,
-            'drug':             rx.drug,
-            'dosage':           rx.dosage or '',
-            'frequency':        rx.frequency or '',
-            'duration':         rx.duration or '',
-            'instructions':     rx.instructions or '',
-            'adverse_effects':  rx.adverse_effects or '',
-            'is_filled':        rx.is_filled,
-            'is_cancelled':     rx.is_cancelled,
-            'created_at':       rx.created_at.isoformat(),
-            'filled_at':        rx.filled_at.isoformat()
+            'prescription_id' : rx.prescription_id,
+            'disease'         : rx.disease,
+            'drug'            : rx.drug,
+            'dosage'          : rx.dosage or '',
+            'frequency'       : rx.frequency or '',
+            'duration'        : rx.duration or '',
+            'instructions'    : rx.instructions or '',
+            'adverse_effects' : rx.adverse_effects or '',
+            'is_filled'       : rx.is_filled,
+            'is_cancelled'    : rx.is_cancelled,
+            'created_at'      : rx.created_at.isoformat(),
+            'filled_at'       : rx.filled_at.isoformat()
                                 if rx.filled_at else None,
-            'doctor':           rx.doctor.user.get_full_name()
+            'doctor'          : rx.doctor.user.get_full_name()
                                 if rx.doctor else '',
-            # ✅ Uses patient_name property — works for both types
-            'patient':          rx.patient_name,
-            'patient_id':       rx.patient_id_str,
-            'data_hash':        rx.data_hash or '',
+            'patient'         : rx.patient_name,
+            'patient_id'      : rx.patient_id_str,
+            'data_hash'       : rx.data_hash or '',
             'transaction_hash': rx.transaction_hash or '',
-            'block_number':     rx.block_number or 0,
+            'block_number'    : rx.block_number or 0,
         }
 
-        # ── Blockchain manager ────────────────────────────────
+        # Blockchain manager
         try:
-            from apps.blockchain.web3_manager import get_blockchain_manager
+            from apps.blockchain.web3_manager import (
+                get_blockchain_manager
+            )
             manager = get_blockchain_manager()
         except Exception:
             return JsonResponse({
-                'success':              True,
-                'db_data':              db_data,
+                'success'             : True,
+                'db_data'             : db_data,
                 'blockchain_available': False,
-                'tampered':             False,
-                'source':               'db_only',
-                'warning':              'Blockchain offline — '
+                'tampered'            : False,
+                'source'              : 'db_only',
+                'warning'             : 'Blockchain offline — '
                                         'hash verification skipped'
             })
 
-        # ── Get blockchain hash ───────────────────────────────
+        # Get blockchain hash
         caller_address = getattr(
             request.user.profile, 'ethereum_address', None
         )
@@ -334,36 +374,51 @@ def get_prescription_blockchain(request, prescription_id):
 
         if not bc_result['success']:
             return JsonResponse({
-                'success':              True,
-                'db_data':              db_data,
+                'success'             : True,
+                'db_data'             : db_data,
                 'blockchain_available': False,
-                'tampered':             False,
-                'source':               'db_only',
-                'warning':              'Could not read from blockchain'
+                'tampered'            : False,
+                'source'              : 'db_only',
+                'warning'             : 'Could not read from blockchain'
             })
 
-        # ── TAMPER DETECTION ──────────────────────────────────
+        # TAMPER DETECTION
         # Compare DB stored hash vs blockchain hash DIRECTLY.
-        # No rehashing needed — both were set at creation time.
+        # TAMPER DETECTION
+# Recompute hash from LIVE DB fields
+
+        live_hash_data = {
+            'prescription_id': rx.prescription_id,
+            'disease': rx.disease,
+            'drug': rx.drug,
+            'dosage': rx.dosage or '',
+            'frequency': rx.frequency or '',
+            'duration': rx.duration or '',
+            'instructions': rx.instructions or '',
+            'adverse_effects': rx.adverse_effects or '',
+}
+
+        recomputed_hash = manager.make_data_hash(
+            live_hash_data
+        ).hex()
         blockchain_hash = bc_result['prescription']['data_hash']
-        db_stored_hash  = rx.data_hash
+        print(f'[VERIFY] recomputed_hash : {recomputed_hash}')
+        print(f'[VERIFY] bc_hash         : {blockchain_hash}')
 
-        print(f'[VERIFY] db_hash : {db_stored_hash}')
-        print(f'[VERIFY] bc_hash : {blockchain_hash}')
-
-        hashes_match = (db_stored_hash == blockchain_hash)
+        hashes_match = (recomputed_hash == blockchain_hash)
 
         return JsonResponse({
-            'success':              True,
-            'prescription':         bc_result['prescription'],
-            'db_data':              db_data,
+            'success'             : True,
+            'prescription'        : bc_result['prescription'],
+            'db_data'             : db_data,
             'blockchain_available': True,
-            'tampered':             not hashes_match,
-            'source':               'blockchain+db',
+            'tampered'            : not hashes_match,
+            'source'              : 'blockchain+db',
             'verification': {
                 'blockchain_hash': blockchain_hash,
-                'stored_hash':     db_stored_hash,
-                'match':           hashes_match,
+                'stored_hash'    : rx.data_hash,
+                'recomputed_hash': recomputed_hash,
+                'match'          : hashes_match,
             }
         })
 
@@ -394,12 +449,13 @@ def fill_prescription_blockchain(request):
         from apps.prescriptions.models import PrescriptionRecord
         from django.utils import timezone
 
-        # ── Check pharmacy approved ───────────────────────────
+        # Check pharmacy approved
         try:
             pharmacy = request.user.pharmacy
         except Exception:
             return JsonResponse(
-                {'success': False, 'error': 'Pharmacy profile not found'},
+                {'success': False,
+                 'error': 'Pharmacy profile not found'},
                 status=400
             )
 
@@ -415,7 +471,7 @@ def fill_prescription_blockchain(request):
                 'error':   'Your pharmacy registration was rejected.'
             }, status=403)
 
-        # ── Get DB record ─────────────────────────────────────
+        # Get DB record
         try:
             rx = PrescriptionRecord.objects.get(
                 prescription_id=prescription_id
@@ -426,7 +482,7 @@ def fill_prescription_blockchain(request):
                 status=404
             )
 
-        # ── Validate status ───────────────────────────────────
+        # Validate status
         if rx.is_filled:
             return JsonResponse(
                 {'success': False, 'error': 'Already dispensed'},
@@ -434,12 +490,14 @@ def fill_prescription_blockchain(request):
             )
         if rx.is_cancelled:
             return JsonResponse(
-                {'success': False, 'error': 'Prescription is cancelled'},
+                {'success': False,
+                 'error': 'Prescription is cancelled'},
                 status=400
             )
         if rx.expiry_date and timezone.now() > rx.expiry_date:
             return JsonResponse(
-                {'success': False, 'error': 'Prescription has expired'},
+                {'success': False,
+                 'error': 'Prescription has expired'},
                 status=400
             )
         if not rx.blockchain_verified:
@@ -449,9 +507,11 @@ def fill_prescription_blockchain(request):
                            'Cannot dispense.'
             }, status=400)
 
-        # ── Blockchain manager ────────────────────────────────
+        # Blockchain manager
         try:
-            from apps.blockchain.web3_manager import get_blockchain_manager
+            from apps.blockchain.web3_manager import (
+                get_blockchain_manager
+            )
             manager = get_blockchain_manager()
         except Exception:
             return JsonResponse({
@@ -460,9 +520,7 @@ def fill_prescription_blockchain(request):
                            'Start Ganache and try again.'
             }, status=503)
 
-        # ── TAMPER DETECTION ──────────────────────────────────
-        # Compare DB stored hash vs blockchain hash DIRECTLY.
-        # This is the ONLY correct way — no rehashing.
+        # TAMPER DETECTION before dispensing
         bc_get = manager.get_prescription(
             prescription_id,
             caller_address=manager.account.address
@@ -488,7 +546,7 @@ def fill_prescription_blockchain(request):
                            'has been modified. Cannot dispense.'
             }, status=400)
 
-        # ── Fill on blockchain ────────────────────────────────
+        # Fill on blockchain
         bc_result = manager.fill_prescription(prescription_id)
 
         if not bc_result['success']:
@@ -497,7 +555,7 @@ def fill_prescription_blockchain(request):
                 'error':   f'Blockchain rejected: {bc_result["error"]}'
             }, status=400)
 
-        # ── Update DB after blockchain confirms ───────────────
+        # Update DB after blockchain confirms
         rx.is_filled        = True
         rx.filled_at        = timezone.now()
         rx.filled_by        = pharmacy
@@ -505,12 +563,38 @@ def fill_prescription_blockchain(request):
         rx.block_number     = bc_result['block_number']
         rx.save()
 
+        # FIX Bug 3: Send dispensed notification to patient
+        if rx.patient and hasattr(rx.patient, 'user') and \
+           rx.patient.user:
+            try:
+                from apps.prescriptions.models import Notification
+                Notification.objects.create(
+                    user    = rx.patient.user,
+                    message = (
+                        f'Your prescription {prescription_id} '
+                        f'has been dispensed by '
+                        f'{pharmacy.pharmacy_name or "pharmacy"}. '
+                        f'Pick up your medicine.'
+                    ),
+                    link    = '/dashboard/patient/',
+                    is_read = False,
+                )
+                print(
+                    f'[NOTIFY] Dispensed notification sent to '
+                    f'{rx.patient.user.username}'
+                )
+            except Exception as notify_err:
+                print(
+                    f'[NOTIFY] Dispensed notification failed: '
+                    f'{notify_err}'
+                )
+
         return JsonResponse({
-            'success':              True,
-            'transaction_hash':     bc_result['transaction_hash'],
-            'block_number':         bc_result['block_number'],
+            'success'             : True,
+            'transaction_hash'    : bc_result['transaction_hash'],
+            'block_number'        : bc_result['block_number'],
             'blockchain_confirmed': True,
-            'message':              'Prescription dispensed ✅'
+            'message'             : 'Prescription dispensed ✅'
         })
 
     except Exception as e:
@@ -538,7 +622,9 @@ def cancel_prescription_blockchain(request):
             )
 
         try:
-            from apps.blockchain.web3_manager import get_blockchain_manager
+            from apps.blockchain.web3_manager import (
+                get_blockchain_manager
+            )
             manager = get_blockchain_manager()
         except Exception:
             return JsonResponse({
@@ -568,9 +654,9 @@ def cancel_prescription_blockchain(request):
             pass
 
         return JsonResponse({
-            'success':          True,
+            'success'         : True,
             'transaction_hash': bc_result['transaction_hash'],
-            'message':          'Prescription cancelled ✅'
+            'message'         : 'Prescription cancelled ✅'
         })
 
     except Exception as e:
@@ -590,16 +676,16 @@ def blockchain_status(request):
         manager = get_blockchain_manager()
         info    = manager.get_network_info()
         return JsonResponse({
-            'success':      True,
-            'connected':    info['connected'],
-            'chain_id':     info['chain_id'],
+            'success'     : True,
+            'connected'   : info['connected'],
+            'chain_id'    : info['chain_id'],
             'block_number': info['block_number'],
-            'account':      info['account'],
-            'contract':     manager.contract.address
+            'account'     : info['account'],
+            'contract'    : manager.contract.address
         })
     except Exception as e:
         return JsonResponse({
-            'success':   False,
+            'success'  : False,
             'connected': False,
-            'error':     str(e)
+            'error'    : str(e)
         })

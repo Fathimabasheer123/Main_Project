@@ -5,30 +5,30 @@
 
 {% block extra_css %}
 <style>
-    body {
-        background: #f5f7fa;
-        font-family: 'Inter', sans-serif;
-    }
+    body { background: #f5f7fa; }
 
     .container-wrapper {
-        max-width: 1200px;
+        max-width: 900px;
         margin: 0 auto;
         padding: 2rem;
     }
 
     .page-header {
         background: white;
-        padding: 2rem;
+        padding: 1.5rem 2rem;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .page-title {
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: 700;
         color: #1e293b;
-        margin: 0 0 0.5rem 0;
+        margin: 0;
     }
 
     .notifications-list {
@@ -36,130 +36,236 @@
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-heading {
+        padding: 1rem 1.5rem;
+        background: #f8fafc;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .notification-item {
-        padding: 1.5rem;
+        padding: 1.2rem 1.5rem;
         border-bottom: 1px solid #f1f5f9;
         display: flex;
         gap: 1rem;
+        align-items: flex-start;
         transition: background 0.2s;
     }
 
-    .notification-item:hover {
-        background: #f8fafc;
-    }
+    .notification-item:hover      { background: #f8fafc; }
+    .notification-item.unread     { background: #f0fdf4; }
+    .notification-item:last-child { border-bottom: none; }
 
     .notification-icon {
-        width: 48px;
-        height: 48px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
     }
 
-    .notification-icon i {
-        font-size: 1.5rem;
-        color: #10b981;
-    }
+    .icon-new      { background: #d1fae5; }
+    .icon-new i    { color: #10b981; font-size: 1.2rem; }
+    .icon-filled   { background: #dbeafe; }
+    .icon-filled i { color: #3b82f6; font-size: 1.2rem; }
 
-    .notification-content {
-        flex: 1;
-    }
+    .notification-content { flex: 1; }
 
     .notification-title {
         font-weight: 600;
         color: #1e293b;
-        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+        margin-bottom: 0.2rem;
     }
 
     .notification-text {
         color: #64748b;
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
     }
 
     .notification-time {
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         color: #94a3b8;
+    }
+
+    .unread-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        flex-shrink: 0;
+        margin-top: 6px;
     }
 
     .empty-state {
         text-align: center;
-        padding: 4rem 2rem;
+        padding: 3rem 2rem;
+        color: #94a3b8;
     }
 
     .empty-state i {
-        font-size: 5rem;
-        color: #cbd5e1;
-        margin-bottom: 1.5rem;
+        font-size: 3.5rem;
+        display: block;
+        margin-bottom: 1rem;
     }
 
     .btn-back {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
+        padding: 0.6rem 1.2rem;
         background: linear-gradient(135deg, #10b981, #059669);
         color: white;
         text-decoration: none;
         border-radius: 8px;
         font-weight: 600;
-        transition: all 0.3s;
-        margin-top: 2rem;
+        font-size: 0.9rem;
+        transition: all 0.2s;
     }
 
     .btn-back:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        opacity: 0.9;
         color: white;
+        transform: translateY(-1px);
+    }
+
+    .btn-mark-all {
+        padding: 0.5rem 1rem;
+        background: white;
+        color: #10b981;
+        border: 1.5px solid #10b981;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-mark-all:hover {
+        background: #f0fdf4;
+        color: #059669;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-wrapper">
+
     <div class="page-header">
         <h1 class="page-title">
-            <i class="bi bi-bell-fill"></i> Notifications
+            <i class="bi bi-bell-fill text-success"></i>
+            Notifications
         </h1>
-        <p class="page-subtitle">Stay updated on your prescription status</p>
-    </div>
-
-    <div class="notifications-list">
-        {% if recent_fills %}
-            {% for rx in recent_fills %}
-                <div class="notification-item">
-                    <div class="notification-icon">
-                        <i class="bi bi-check-circle-fill"></i>
-                    </div>
-                    <div class="notification-content">
-                        <div class="notification-title">
-                            Prescription Ready
-                        </div>
-                        <div class="notification-text">
-                            Your prescription {{ rx.prescription_id }} has been dispensed and is ready for pickup
-                        </div>
-                        <div class="notification-time">
-                            <i class="bi bi-clock"></i> {{ rx.filled_at|timesince }} ago
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <i class="bi bi-bell-slash"></i>
-                <h3>No Notifications</h3>
-                <p>You'll see updates here about your prescriptions</p>
-            </div>
+        {% if notifications %}
+        <a href="{% url 'mark_all_notifications_read' %}"
+           class="btn-mark-all">
+            <i class="bi bi-check2-all"></i> Mark all as read
+        </a>
         {% endif %}
     </div>
+
+    <!-- ── New Prescription Notifications ──────────────── -->
+    <div class="notifications-list">
+        <div class="section-heading">
+            <i class="bi bi-file-earmark-plus"></i>
+            Prescription Notifications
+        </div>
+
+        {% for notif in notifications %}
+        <a href="{% url 'mark_notification_read' notif.id %}"
+           class="notification-item
+                  {% if not notif.is_read %}unread{% endif %}
+                  text-decoration-none d-flex">
+            <div class="notification-icon icon-new">
+                <i class="bi bi-file-earmark-medical-fill"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    New Prescription
+                </div>
+                <div class="notification-text">
+                    {{ notif.message }}
+                </div>
+                <div class="notification-time">
+                    <i class="bi bi-clock"></i>
+                    {{ notif.created_at|timesince }} ago
+                    &bull;
+                    {{ notif.created_at|date:"d M Y, H:i" }}
+                </div>
+            </div>
+            {% if not notif.is_read %}
+            <div class="unread-dot"></div>
+            {% endif %}
+        </a>
+        {% empty %}
+        <div class="empty-state">
+            <i class="bi bi-file-earmark-x"></i>
+            <p>No prescription notifications yet.</p>
+            <p style="font-size:0.85rem;">
+                You'll be notified here when a doctor
+                creates a new prescription for you.
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ── Dispensing Notifications ──────────────────────── -->
+    {% if recent_fills %}
+    <div class="notifications-list">
+        <div class="section-heading">
+            <i class="bi bi-bag-check"></i>
+            Dispensing Updates
+        </div>
+
+        {% for rx in recent_fills %}
+        <div class="notification-item">
+            <div class="notification-icon icon-filled">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">
+                    Prescription Dispensed
+                </div>
+                <div class="notification-text">
+                    Your prescription
+                    <strong>{{ rx.prescription_id }}</strong>
+                    has been dispensed.
+                    {% if rx.filled_by %}
+                        Dispensed by
+                        <strong>
+                            {{ rx.filled_by.pharmacy_name }}
+                        </strong>.
+                    {% endif %}
+                </div>
+                <div class="notification-time">
+                    <i class="bi bi-clock"></i>
+                    {% if rx.filled_at %}
+                        {{ rx.filled_at|timesince }} ago
+                        &bull;
+                        {{ rx.filled_at|date:"d M Y, H:i" }}
+                    {% else %}
+                        Recently dispensed
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <a href="{% url 'patient_dashboard' %}" class="btn-back">
         <i class="bi bi-arrow-left"></i> Back to Dashboard
     </a>
+
 </div>
 {% endblock %}
